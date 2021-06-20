@@ -1,0 +1,14 @@
+Problems,normalization_with_self_0,ranksum to last alg,normalization_with_nd_0,ranksum to last alg,normalization_with_nd_3,ranksum to last alg,
+DTLZ1,0.439039, worse, 1.085724, equal, 1.082351
+DTLZ2,0.672299, worse, 0.746198, better, 0.744978
+DTLZ3,0.073442, worse, 0.728842, better, 0.715234
+DTLZ4,0.187784, worse, 0.186730, worse, 0.234004
+DTLZ7,0.569215, worse, 0.300139, worse, 0.578629
+WFG_2,1.032137, equal, 0.999755, worse, 1.028050
+WFG_3,0.511081, better, 0.509162, better, 0.503378
+WFG_4,0.604703, better, 0.604403, better, 0.587097
+WFG_5,0.637939, better, 0.639335, better, 0.635562
+WFG_6,0.634655, better, 0.631337, better, 0.617321
+WFG_7,0.551622, equal, 0.560666, better, 0.547812
+WFG_8,0.390248, worse, 0.380656, worse, 0.396951
+WFG_9,0.570876, equal, 0.563612, equal, 0.563925
