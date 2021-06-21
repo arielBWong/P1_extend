@@ -419,7 +419,8 @@ class MAF6(Problem):
                          n_constr=self.n_constr,
                          xl=self.xl,
                          xu=self.xu,
-                         type_var=anp.double)
+                         type_var=anp.double,
+                         evaluation_of="manual")
 
     def _evaluate(self, x, out, *args, **kwargs):
         ''' platemo
@@ -437,7 +438,6 @@ class MAF6(Problem):
         g = np.sum((x[:, self.n_obj-1:] - 0.5)**2, 1)
         g = np.atleast_2d(g).reshape(-1, 1)
 
-
         tmp = np.tile(g, (1, self.n_obj - I))
         # PopDec(:,I:obj.M-1)--> [I-1, M-2]--> [I-1, M-1)
         # (1+2*Temp.*PopDec(:,I:obj.M-1))./(2+2*Temp)
@@ -449,7 +449,6 @@ class MAF6(Problem):
         f1 = np.hstack((np.ones((n, 1)), np.cos(x[:, 0:self.n_obj - 1] * np.pi / 2)))
         # [ones(size(PopDec,1),1),sin(PopDec(:,obj.M-1:-1:1)*pi/2)]
         f2 = np.hstack((np.ones((n, 1)), np.sin(np.fliplr(x[:, 0:self.n_obj - 1]) * np.pi / 2)))
-        # f = (1+100*g) * np.fliplr(np.cumprod(f1, axis=1)) * f2
         f = (1 + 100*g) * np.fliplr(np.cumprod(f1, axis=1)) * f2
 
         out['F'] = f

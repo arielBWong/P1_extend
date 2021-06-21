@@ -692,7 +692,7 @@ def plot_process(ax, problem, train_y, norm_train_y, denormalize, idealsearch, m
         plt.legend(['PF', 'archive A', 'nd front', 'ref point', 'extreme points', 'surrogate minima'], fontsize=ss,
                    ncol=2, handleheight=2.4, labelspacing=0.005)
 
-    ax.set_title(problem.name(),fontsize=ss)
+    ax.set_title(problem.name(), fontsize=ss)
     ideal = np.min(nd_frontdn, axis=0)
     nadir = np.max(nd_frontdn, axis=0)
     line1 = [ideal[0], nadir[0], nadir[0], ideal[0], ideal[0]]
@@ -970,9 +970,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         train_x, train_y = cornerplus_search(train_x, train_y, krg, target_problem)
         # train_x, train_y = cornerplus_searchOneRound(train_x, train_y, krg, target_problem)
     elif search_ideal == 3:  # corner search
-        before_search = train_x.shape[0]    #
-        before_y = copy.deepcopy(train_y)   # for checking success rate
-        extreme_search = extreme_search + 1 # for checking sucess rate
+        before_search = train_x.shape[0]
+        before_y = copy.deepcopy(train_y)    # for checking success rate
+        extreme_search = extreme_search + 1  # for checking sucess rate
         train_x, train_y = cornerplus_searchOneRound(train_x, train_y, krg, target_problem)
 
         after_search = train_x.shape[0]
@@ -1085,6 +1085,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                     extreme_search = extreme_search + 1  # for checking sucess rate
 
                     before_search = train_x.shape[0]
+                    # difference with 4 is corner search has no ND sorting
+                    # and no kriging model update
+                    # no ND front insert
                     train_x, train_y = cornerplus_searchOneRound(train_x, train_y, krg, target_problem)
                     after_search = train_x.shape[0]
                     corners = np.linspace(before_search, after_search - 1, num=target_problem.n_obj * 2)
@@ -1125,6 +1128,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                     hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
 
                     # find corners and decide whether to evaluate them
+                    # use current ND front to force corner search move forward
                     corner_param = {'denorm': denormalize, 'inserted_pop': insertpop}
                     corner_x, corner_fnorm = cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **corner_param)
                     train_x, train_y, n_corner = selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm, krg, nd_front, hvimprovement, hv_ref, target_problem)
@@ -1220,12 +1224,13 @@ def single_run():
     target_problems = hyp['MO_target_problems']
     method_selection = hyp['method_selection']
     search_ideal = hyp['search_ideal']
-    search_ideal = 0
+    search_ideal = 2
+
     max_eval = hyp['max_eval']
     num_pop = hyp['num_pop']
     num_gen = hyp['num_gen']
 
-    target_problem = target_problems[2]
+    target_problem = target_problems[5]
     method_selection = "normalization_with_nd"
     seed_index = 2
     visual = True
@@ -1291,7 +1296,7 @@ if __name__ == "__main__":
 
     # plot_run()
 
-    # single_run()
-    para_run()
+    single_run()
+    # para_run()
     # import sklearn
     # print('The scikit-learn version is {}.'.format(sklearn.__version__))

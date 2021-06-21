@@ -309,9 +309,9 @@ class Problem:
         s += "# n_var: %s\n" % self.n_var
         s += "# n_obj: %s\n" % self.n_obj
         s += "# n_constr: %s\n" % self.n_constr
-        s += "# f(xl): %s\n" % self.evaluate(self.xl)[0]
-        s += "# f((xl+xu)/2): %s\n" % self.evaluate((self.xl + self.xu) / 2.0)[0]
-        s += "# f(xu): %s\n" % self.evaluate(self.xu)[0]
+        # s += "# f(xl): %s\n" % self.evaluate(self.xl)[0]
+        # s += "# f((xl+xu)/2): %s\n" % self.evaluate((self.xl + self.xu) / 2.0)[0]
+        # s += "# f(xu): %s\n" % self.evaluate(self.xu)[0]
         return s
 
     @staticmethod
