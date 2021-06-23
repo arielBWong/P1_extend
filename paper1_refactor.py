@@ -22,6 +22,9 @@ import pygmo as pg
 from mpl_toolkits import mplot3d
 from sort_population import sort_population_cornerfirst
 from EI_problem import ego_believer
+from sklearn import cluster
+from sklearn.metrics import silhouette_samples, silhouette_score
+import time
 
 
 
@@ -344,10 +347,10 @@ def cornerplus_search(train_x, train_y, krg, target_problem):
     train_x, train_y = additional_evaluation(x_out1, train_x, train_y, target_problem)
 
     # run all-but-one objective, corner search
-    x_out2 = identify_cornerpoints(krg, n_vals, n_sur_cons, n_sur_objs,
-                                   target_problem.xl, target_problem.xu, guide_x)
+    # x_out2 = identify_cornerpoints(krg, n_vals, n_sur_cons, n_sur_objs,
+                                   # target_problem.xl, target_problem.xu, guide_x)
 
-    train_x, train_y = additional_evaluation(x_out2, train_x, train_y, target_problem)
+    # train_x, train_y = additional_evaluation(x_out2, train_x, train_y, target_problem)
     return train_x, train_y
 
 def cornerplus_searchOneRound(train_x, train_y, krg, target_problem, **kwargs):
@@ -404,8 +407,8 @@ def cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **kwargs
     n_objs = train_y.shape[1]
     low = target_problem.xl
     up = target_problem.xu
-    # new_problem = single_krg_optim.cornersearch_krgopt(krg, n_vals, n_sur_cons, n_objs*2, low, up)
-    new_problem = single_krg_optim.cornersearch_krgoptminus(krg, n_vals, n_sur_cons, n_objs, low, up)
+    new_problem = single_krg_optim.cornersearch_krgopt(krg, n_vals, n_sur_cons, n_objs*2, low, up)
+    # new_problem = single_krg_optim.cornersearch_krgoptminus(krg, n_vals, n_sur_cons, n_objs, low, up)
 
 
     single_bounds = np.vstack((low, up)).T.tolist()
@@ -439,11 +442,49 @@ def cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **kwargs
         x_out = ndx
         f_out = nd
     '''
-    x_out, f_out = kmeans_selection(nd, ndx, new_problem.n_obj)
+    # x_out, f_out = kmeans_selection(nd, ndx, new_problem.n_obj)
+    x_out, f_out = Silhouette(nd, ndx, new_problem.n_obj, target_problem.n_obj)
     # this selection method has potential to improve
 
     x_out = np.atleast_2d(x_out).reshape(-1, n_vals)
     return x_out, f_out
+
+
+
+def Silhouette(nd, ndx, n, true_nobj):
+    sil_score = []
+    clusters = np.arange(2, n + 1)
+    for i in clusters:
+        labels = cluster.KMeans(n_clusters=i).fit_predict(nd)
+        s = silhouette_score(nd, labels)
+        sil_score = np.append(sil_score, s)
+    k = np.argsort(sil_score)
+    best_cluster = clusters[k[-1]]  # max sort value
+    labels = cluster.KMeans(n_clusters=best_cluster).fit_predict(nd)
+
+    out_x = []
+    out_f = []
+    n_var = ndx.shape[1]
+    f_var = nd.shape[1]
+
+
+
+    for k in range(best_cluster):
+        idk = np.where(labels == k)
+        batchkf = nd[idk[0], :]
+        batchkx = ndx[idk[0], :]
+        batchkd = np.linalg.norm(batchkf[:, 0:true_nobj], axis=1)
+        dist_orderk = np.argsort(batchkd)
+
+        x = batchkx[dist_orderk[0], :]
+        f = batchkf[dist_orderk[0], :]
+        out_x = np.append(out_x, x)
+        out_f = np.append(out_f, f)
+
+    out_x = np.atleast_2d(out_x).reshape(-1, n_var)
+    out_f = np.atleast_2d(out_f).reshape(-1, f_var)
+    return out_x, out_f
+
 
 
 def kmeans_selection(nd, ndx, n):
@@ -530,7 +571,6 @@ def identify_cornerpoints(krg, n_var, n_constr, n_obj, low, up, guide_x):
                set n_var of problem to 2
     '''
     x_out = []
-
     plt.ion()
     ax = plt.axes(projection='3d')
     # identify ideal x and f for each objective
@@ -555,7 +595,7 @@ def identify_cornerpoints(krg, n_var, n_constr, n_obj, low, up, guide_x):
 def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal):
     # (5)save nd front under name \problem_method_i\nd_seed_1.csv
     path = os.getcwd()
-    path = path + '\paper1_results3maf11d_3corner'
+    path = path + '\paper1_results3maf11d_5corner'
     if not os.path.exists(path):
         os.mkdir(path)
     savefolder = path + '\\' + target_problem.name() + '_' + method_selection + '_' + str(int(search_ideal))
@@ -573,7 +613,7 @@ def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal):
 
 def pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, nadir_record, cornerid, prediction_xrecord, prediction_yrecord, extreme_search, success_extremesearch):
     path = os.getcwd()
-    path = path + '\paper1_results3maf11d_3corner'
+    path = path + '\paper1_results3maf11d_5corner'
     if not os.path.exists(path):
         os.mkdir(path)
     savefolder = path + '\\' + target_problem.name() + '_' + method_selection + '_' + str(int(search_ideal))
@@ -588,6 +628,7 @@ def pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, 
     nadir_record = nadir_record.reshape(-1, n)
     np.savetxt(savename, nadir_record, delimiter=',')
 
+    '''
     if search_ideal == 3:
         savename = savefolder + '\\idealsearchid_seed_' + str(seed_index) + '.csv'
         cornerid = cornerid.reshape(-1, 1)
@@ -604,6 +645,7 @@ def pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, 
         savename = savefolder + '\\search_and_success_rate' + str(seed_index) + '.csv'
         savedata = [extreme_search, success_extremesearch]
         np.savetxt(savename, savedata, delimiter=',')
+    '''
 
 
 
@@ -724,7 +766,6 @@ def plot_process(ax, problem, train_y, norm_train_y, denormalize, idealsearch, m
 
 
     # -----
-
     path = os.getcwd()
     savefolder = path + '\\paper1_results\\process_plot'
     if not os.path.exists(savefolder):
@@ -866,7 +907,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
 
 
-
+    start = time.time()
     enable_crossvalidation = False
     mp.freeze_support()
     np.random.seed(seed_index)
@@ -935,7 +976,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     prediction_xrecord = np.atleast_2d([])
     prediction_yrecord = np.atleast_2d([])
     nadir = denormalize(hv_ref, train_y)
-    nadir_record = np.append(nadir_record, nadir)
+    nadir_record = np.append(nadir_record, nadir)\
 
     # record success rate of extreme search expand ideal
     extreme_search = 0
@@ -952,8 +993,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
             plot_process3d(target_problem, train_y, norm_train_y, denormalize, True, krg1, train_x, 0)
             # return
 
-
-
+    '''
     # (4-0) before enter propose x phase, conduct once krg search on ideal
     if search_ideal == 1:
         train_x, train_y = idealsearch_update(train_x, train_y, krg, target_problem)
@@ -965,11 +1005,11 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
             else:
                 plot_process3d(ax, target_problem, train_y, norm_train_y, denormalize, True, krg1, train_x)
             # return
-    elif search_ideal == 2:  # only independent search
+    elif search_ideal == 6:  # only independent search
         # corner search on the all but one objectives
         train_x, train_y = cornerplus_search(train_x, train_y, krg, target_problem)
         # train_x, train_y = cornerplus_searchOneRound(train_x, train_y, krg, target_problem)
-    elif search_ideal == 3:  # corner search
+    elif search_ideal == 7:  # corner search
         before_search = train_x.shape[0]
         before_y = copy.deepcopy(train_y)    # for checking success rate
         extreme_search = extreme_search + 1  # for checking sucess rate
@@ -1012,14 +1052,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
         # prepare for itereation
         norm_train_y = norm_scheme(train_y)
-
-
-
-
+'''
 
     # (4) enter iteration, propose next x till number of iteration is met
-
-
     for iteration in range(n_iter):
         print('iteration %d' % iteration)
         n_corner = 0  # if corner search conducted this will be changed inside method
@@ -1032,8 +1067,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                         'ideal_search': search_ideal, 'seed': seed_index, 'method': method_selection}  # plot save params
 
         insertpop = get_ndfrontx(train_x, norm_train_y)
-
-
         if not visual:
             ax = None
         next_x, _, _, _ = optimizer_EI.optimizer_DE(ego_eval, ego_eval.n_constr, bounds,
@@ -1053,7 +1086,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         pred_y = np.atleast_2d(pred_y).reshape(1, -1)
         pred_y = denormalize(pred_y, train_y)
         prediction_yrecord = np.append(prediction_yrecord, pred_y)
-
 
         # add new proposed data
         train_x = np.vstack((train_x, next_x))
@@ -1079,7 +1111,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                 elif search_ideal == 2:
                     print('corner search independent')
                     train_x, train_y = cornerplus_search(train_x, train_y, krg, target_problem)
-                elif search_ideal == 3:
+                elif search_ideal == 6:
                     print('corner search collected')
                     before_y = copy.deepcopy(train_y)    # for checking success rate
                     extreme_search = extreme_search + 1  # for checking sucess rate
@@ -1109,7 +1141,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                         pred_y = np.atleast_2d(pred_y).reshape(1, -1)
                         pred_y = denormalize(pred_y, train_y)
                         prediction_yrecord = np.append(prediction_yrecord, pred_y)
-                elif search_ideal == 4:
+                elif search_ideal == 3:
                     # Since now sample has been added, it makes sense to update the kriging model
                     norm_train_y = norm_scheme(train_y)
                     krg, krg_g = cross_val_krg(train_x, norm_train_y, cons_y, enable_crossvalidation)
@@ -1165,7 +1197,8 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     # (6) save hv converge  under name \problem_method_i\hvconvg_seed_1.csv
     nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal)
     pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, nadir_record, corner_id, prediction_xrecord, prediction_yrecord, extreme_search, success_extremesearch)
-
+    end = time.time()
+    print(str((end-start)/(60 * 60)) + 'hours')
 
 
 def process_visualcheck(ax, next_x, next_y, krg, denormalize, train_y):
@@ -1248,9 +1281,9 @@ def para_run():
                      # 'p/wfg_problems_hv.json',
                      # 'p/wfg_problems_hvnd.json',
                      # 'p/wfg_problems_hvndr3.json',
-                     'p/maf_problems_hv.json',
-                     'p/maf_problems_hvnd.json',
-                     'p/maf_problems_hvndr3.json',
+                     # 'p/maf_problems_hv.json',
+                     # 'p/maf_problems_hvnd.json',
+                     'p/maf_problems_hvndr5.json',
                      ]
     args = []
     seedmax = 29
@@ -1296,7 +1329,7 @@ if __name__ == "__main__":
 
     # plot_run()
 
-    single_run()
-    # para_run()
+    # single_run()
+    para_run()
     # import sklearn
     # print('The scikit-learn version is {}.'.format(sklearn.__version__))

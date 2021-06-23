@@ -710,10 +710,10 @@ def hv_summary2csv():
     dump(median_id, saveName)
 
     savestat = path + '\\hvstatdtlz.csv'
-
     np.savetxt(savestat, hv_stat, delimiter=',')
 
     print(0)
+
 
 def get_ndfront(train_y):
     '''
@@ -791,12 +791,12 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
     median_visual = True
 
     num_pro = len(target_problems)
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_4' ] #'normalization_with_nd_3']   'normalization_with_external_4'
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_4', 'normalization_with_nd_3'] #'normalization_with_nd_3']   'normalization_with_external_4'
     # methods = [ 'normalization_with_nd_1']
     num_methods = len(methods)
-    hv_raw = np.zeros((seedmax, num_pro * 3))
-    ideal_distance = np.zeros((seedmax, num_pro * 3))
-    nadir_distance = np.zeros((seedmax, num_pro * 3))
+    hv_raw = np.zeros((seedmax, num_pro * num_methods))
+    ideal_distance = np.zeros((seedmax, num_pro * num_methods))
+    nadir_distance = np.zeros((seedmax, num_pro * num_methods))
 
     path = os.getcwd()
     # path = path + '\paper1_results'
@@ -810,7 +810,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
         if 'ZDT' in problem.name():
             evalnum = 100
         if 'DTLZ' in problem.name():
-            evalnum = 200  # 200   # 100
+            evalnum = 300  # 200   # 100
         if 'WFG' in problem.name() or 'MAF' in problem.name():
             evalnum = 300  # 300   # 250
         for j in range(num_methods):
@@ -834,8 +834,8 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
                 nadir_distance[seed, problem_i * num_methods + j] = d2
 
     # (2) mean median collection
-    hv_stat = np.zeros((4, num_pro * 3))
-    for i in range(num_pro * 3):
+    hv_stat = np.zeros((4, num_pro * num_methods))
+    for i in range(num_pro * num_methods):
     # for i in range(num_pro * 1):
         hv_stat[0, i] = np.mean(hv_raw[:, i])
         hv_stat[1, i] = np.std(hv_raw[:, i])
@@ -844,9 +844,9 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
         hv_stat[3, i] = sortlist[int(seedmax / 2)]
 
     # (3) ideal distance check
-    d_stat = np.zeros((4, num_pro * 3))
-    nadir_stat = np.zeros((4, num_pro * 3))
-    for i in range(num_pro * 3):
+    d_stat = np.zeros((4, num_pro * num_methods))
+    nadir_stat = np.zeros((4, num_pro * num_methods))
+    for i in range(num_pro * num_methods):
         # for i in range(num_pro * 1):
         d_stat[0, i] = np.mean(ideal_distance[:, i])
         d_stat[1, i] = np.std(ideal_distance[:, i])
@@ -854,8 +854,8 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
         d_stat[2, i] = ideal_distance[:, i][sortlist[int(seedmax / 2)]]
         d_stat[3, i] = sortlist[int(seedmax / 2)]
         if median_visual:
-            problem_id = int(i/3)
-            method_id = int(np.mod(i, 3))
+            problem_id = int(i/num_methods)
+            method_id = int(np.mod(i, num_methods))
             problem_2visual = target_problems[problem_id]
             problem = eval(problem_2visual)
             savefolder = path + '\\' + problem.name() + '_' + methods[method_id]
@@ -909,33 +909,6 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
 
     np.savetxt(savestat, hv_stat, delimiter=',')
 
-    hv_ttest = np.zeros((2, num_pro))
-    for i in range(num_pro):
-        a = hv_raw[:, i * 3 + 1]
-        b = hv_raw[:, i * 3 + 2]
-        hv_ttest[0, i], hv_ttest[1, i] = scipy.stats.ttest_ind(a, b)
-
-    path = os.getcwd()
-    # path = path + '\\paper1_results\\'
-    path = path + '\\' + resultfolder + '\\'
-    savefile = path + result_convertfolder + '\\results_ttest.csv'
-    with open(savefile, 'w') as f:
-        # write header
-        f.write(',')
-        for i in range(num_pro):
-                m = eval(target_problems[i]).name()
-                f.write(m)
-                f.write(',')
-        f.write('\n')
-        f.write('t-stat,')
-        for i in range(num_pro):
-            f.write(str(hv_ttest[0, i]))
-            f.write(',')
-        f.write('\n p-stat,')
-        for i in range(num_pro):
-            f.write(str(hv_ttest[1, i]))
-            f.write(',')
-
     print(0)
 
 def get_nadirdistance(trainy, problem, method_selection):
@@ -957,14 +930,17 @@ def get_nadirdistance(trainy, problem, method_selection):
     # normalize trained algorithm first and then PF
     nadir_algo = (nadir_algo - ideal) / (nadir - ideal)
     nadir = (nadir - ideal)/(nadir - ideal)
-
-
     return np.linalg.norm(nadir - nadir_algo)
+
 
 def plotmedian_hv(median_id, trainy, problem_str, method_id, init_size, resultfolder):
     # this method plot the median results  of final ND and PF
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_external_4']#'normalization_with_nd_3']
-    methods_title = ['archive',  'ND front', 'external corner'] # 'corner search']
+    # methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_external_4']#'normalization_with_nd_3']
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_4',
+     'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+
+    # methods_title = ['archive',  'ND front', 'external corner'] # 'corner search']
+    methods_title = ['archive',  'ND front', 'independent', 'M corners', '2M corners']
     problem = eval(problem_str)
     true_pf = get_paretofront(problem, 1000)
     # ---------- visual check
@@ -1009,8 +985,6 @@ def plotmedian_hv(median_id, trainy, problem_str, method_id, init_size, resultfo
 
     savename3 = savefolder + '\\' + problem.name() + methods[method_id] + '_median_seed_' + str(int(median_id)) + '_nd.fig.pickle'
     pickle.dump(f1, open(savename3, 'wb'))
-
-
     plt.close()
 
 
@@ -1123,7 +1097,6 @@ def extract_nadir_ideal(problem, num_methods, methods, seedmax, path, savefolder
 
         np.savetxt(savefile1, ideal_distance, delimiter=',')
         np.savetxt(savefile2, nadir_distance, delimiter=',')
-
     return None
 
 def parallel_extract_nadir_ideal():
@@ -1235,7 +1208,7 @@ if __name__ == "__main__":
     # resultfolder = 'paper1_results'
     # resultconver = 'paper1_convert'
 
-    resultfolder = 'paper1_results3maf11d'
+    resultfolder = 'paper1_results3maf11d_3corner'
     resultconver = 'paper1_convert'
 
 
@@ -1252,13 +1225,13 @@ if __name__ == "__main__":
     # nadirplot(resultfolder, 'distance_plot')
     # parallel_extract_nadir_ideal()
     # create_ideal_dis_file(resultfolder, resultconver)
-    # trainy_summary2csv(resultfolder, resultconver)
+    trainy_summary2csv(resultfolder, resultconver)
     # prediction_accuracy()
 
     # hv_summary2csv()
     # hv_medianplot()
     # plot3dresults()
-    hvconverge_averageplot(resultfolder, resultconver)
+    # hvconverge_averageplot(resultfolder, resultconver)
 
     # nadirplot()
     # hv_medianplot3in1()

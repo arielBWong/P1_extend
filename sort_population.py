@@ -83,6 +83,67 @@ def sort_population_cornerfirst(popsize, nobj, ncon, infeasible, feasible, all_c
     return selected
 
 
+def sort_population_cornerlexicon(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x):
+    # return ordered ID
+    l1 = []
+    order = []
+    n_var = all_x.shape[1]
+
+    if ncon != 0:
+        print('this sorting does not deal with constraints')
+    else:
+        # sort all f assume all f is of form  [f1, f2, f3, f1^2+f2^2, f1^2+f3^2, f1^2+f3^2]
+        n = all_f.shape[0]
+        a = np.linspace(0, n - 1, n, dtype=int)
+        uniq_f, indx_unique = np.unique(all_f, return_index=True, axis=0)
+        indx_same = np.setdiff1d(a, indx_unique)
+
+        #
+        for i in range(nobj):
+            # single_colid = np.argsort(uniq_f[:, i])
+            # sort with lexcon style
+            indx = np.arange(nobj - 1, -1, -1)
+            indx = np.delete(indx, nobj - 1 - i)
+            indx = np.append(indx, i)
+
+            #
+            rearrange_uniquef = uniq_f[:, indx]
+            rearrange_uniquef = rearrange_uniquef.transpose()
+            single_colid = np.lexsort(
+                rearrange_uniquef)  # lex sort key is last row, so need to transpose original matrix
+            l1 = np.append(l1, single_colid)
+
+        # l1 is unique objectives' sorted ID
+        l1 = np.atleast_2d(l1).reshape(-1, nobj, order='F')
+
+        # corner sort unique objective's ID
+        # candidate_id is selecting from each objective
+        # order is the list of selected ID
+        i = 0
+        while len(order) < uniq_f.shape[0]:
+            # print(order)
+            candidate_id = l1[0, i]
+
+            order = np.append(order, candidate_id)
+            # rearrange l1 remove candidate id
+            l1 = l1.flatten(order='F')
+            remove_id = np.where(l1 == candidate_id)
+            l1 = np.delete(l1, remove_id)
+            l1 = np.atleast_2d(l1).reshape(-1, nobj, order='F')
+
+            # cycled pointer
+            i = i + 1
+            if i >= nobj:
+                i = 0
+
+    # convert back to original population ID
+    selected = indx_unique[order.astype(int)]
+    selected = np.append(selected, indx_same).flatten()
+    selected = selected[0:popsize]
+    selected = selected.astype(int)
+    return selected
+
+
 
 
 def sort_population_NDcorner(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x):

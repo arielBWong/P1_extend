@@ -1,14 +1,17 @@
 import numpy as np
 #from test_function import fobj
 from create_child import create_child, create_child_c
-from sort_population import sort_population, sort_population_cornerfirst, sort_population_NDcorner
+from sort_population import sort_population, sort_population_cornerfirst, sort_population_NDcorner, sort_population_cornerlexicon
 from sklearn.metrics import mean_squared_error
 import time
 import matplotlib.pyplot as plt
 from paper1_refactor import get_ndfront, get_ndfrontx
 from EI_krg import acqusition_function, close_adjustment
 import copy
+
+
 from sklearn import cluster
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 
 def cross_val(val_x, val_y, **kwargs):
@@ -149,7 +152,11 @@ def optimizer_forcornersearch(problem, nobj, ncon, bounds, mut, crossp, popsize,
     :param val_data:
     :return:
     '''
-    # ax = plt.axes(projection='3d')
+
+    visualize = False
+    if 'visualize' in kwargs.keys():
+        ax = plt.axes(projection='3d')
+        visualize = True
 
     dimensions = len(bounds)
     pop_g = []
@@ -254,6 +261,7 @@ def optimizer_forcornersearch(problem, nobj, ncon, bounds, mut, crossp, popsize,
         # selected = sort_population(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f)
         # selected = sort_population_cornerfirst(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
         selected = sort_population_NDcorner(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
+        # selected = sort_population_cornerlexicon(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
 
         end = time.time()
         # print('sorting  time used %.4f' % (end - start))
@@ -261,7 +269,10 @@ def optimizer_forcornersearch(problem, nobj, ncon, bounds, mut, crossp, popsize,
         pop = all_x[selected, :]
         pop_f = all_f[selected, :]
 
-        # plot_cornersearch(ax, problem, pop_f, pop_x, False, **kwargs)
+        if 'trainy' in kwargs.keys() and visualize:
+            plot_cornersearch(ax, problem, pop_f, pop_x, False, **kwargs)
+        elif 'trainy' not in kwargs.keys() and visualize:
+            plot_cornersearch_nosurrogate(ax, problem, pop_f, pop_x, False, **kwargs)
 
         # insert a crossvalidation
         if ncon != 0:
@@ -276,10 +287,18 @@ def optimizer_forcornersearch(problem, nobj, ncon, bounds, mut, crossp, popsize,
     # Getting the variables in appropriate bounds
     pop_x = min_b + pop * diff
     archive_x = min_b + archive_x * diff
-    # plot_cornersearch(ax, problem, pop_f, pop_x, True, **kwargs)
+
+
+    if 'trainy' in kwargs.keys() and visualize:
+        plot_cornersearch(ax, problem, pop_f, pop_x, True, **kwargs)
+    elif 'trainy' not in kwargs.keys() and visualize:
+        plot_cornersearch_nosurrogate(ax, problem, pop_f, pop_x, True, **kwargs)
+
 
     # plt.close()
     return pop_x, pop_f, pop_g, archive_x, archive_f, archive_g
+
+
 
 def plot_cornersearch(ax, problem, pop_f, pop_x, last, **kwargs):
     # ax = plt.axes(projection='3d')
@@ -366,7 +385,7 @@ def plot_cornersearch(ax, problem, pop_f, pop_x, last, **kwargs):
         f_out = denormalization(f_out, trainy)
         nd_f = get_ndfront(trainy)
         ax.scatter3D(f_out[:, 0], f_out[:, 1],  f_out[:, 2], c='tab:orange', marker='x', s=80, label='selected')
-        ax.scatter3D(nd_f[:, 0],nd_f[:, 1], nd_f[:, 2], c='tab:olive', marker='d', s=80, label='normalization nd')
+        ax.scatter3D(nd_f[:, 0], nd_f[:, 1], nd_f[:, 2], c='tab:olive', marker='d', s=80, label='normalization nd')
 
 
     ax.set_xlabel('f1')
@@ -376,6 +395,61 @@ def plot_cornersearch(ax, problem, pop_f, pop_x, last, **kwargs):
     plt.legend()
     plt.pause(0.1)
 
+
+def plot_cornersearch_nosurrogate(ax, problem, pop_f, pop_x, last, **kwargs):
+    # this method plots corner search process without surrogate
+    ax.cla()
+    PF = get_paretofront(problem, 1000)
+    ax.scatter3D(pop_f[:, 0], pop_f[:, 1], pop_f[:, 2], c='orange', marker='x', s=50, label='population')
+    ax.scatter3D(PF[:, 0], PF[:, 1], PF[:, 2], c='g', alpha=0.2, label='PF')
+
+    if last:
+        # pick up nd front
+        pop_f = close_adjustment(pop_f)
+        nd = get_ndfront(pop_f)
+        ndx = get_ndfrontx(pop_x, pop_f)
+        selected = sort_population_cornerfirst(nd.shape[0], problem.n_obj, 0, [], [], [], nd, ndx)
+        nd = nd[selected, :]
+        ndx = ndx[selected, :]
+
+
+        # Silhouette selection
+        sil_score = []
+        n = problem.n_obj
+        colors = ['tab:blue', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:olive']
+        true_nobj = 3
+        clusters = np.arange(2, n + 1)
+        for i in clusters:
+            labels = cluster.KMeans(n_clusters=i).fit_predict(nd)
+            s = silhouette_score(nd, labels)
+            sil_score = np.append( sil_score,s)
+        k = np.argsort(sil_score)
+        best_cluster = clusters[k[-1]]  # max sort value
+        print('best cluster number: '+ str(best_cluster))
+        labels = cluster.KMeans(n_clusters=best_cluster).fit_predict(nd)
+
+        out_x = []
+        out_f = []
+        n_var = ndx.shape[1]
+        f_var = nd.shape[1]
+
+        for k in range(best_cluster):
+            idk = np.where(labels == k)
+            batchkf = nd[idk[0], :]
+
+            ax.scatter3D(batchkf[:, 0], batchkf[:, 1], batchkf[:, 2], c=colors[k])
+
+            batchkx = ndx[idk[0], :]
+            batchkd = np.linalg.norm(batchkf[:, 0:true_nobj], axis=1)
+            dist_orderk = np.argsort(batchkd)
+
+            x = batchkx[dist_orderk[0], :]
+            f = batchkf[dist_orderk[0], :]
+            out_x = np.append(out_x, x)
+            out_f = np.append(out_f, f)
+            ax.scatter3D(f[0], f[ 1], f[2], c=colors[k], marker='x', s=200)
+    plt.legend()
+    plt.pause(0.1)
 
 def kmeans_selection(nd, ndx, n):
     from sklearn import cluster
