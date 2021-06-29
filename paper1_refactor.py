@@ -19,7 +19,7 @@ import os
 import copy
 import multiprocessing as mp
 import pygmo as pg
-from mpl_toolkits import mplot3d
+# from mpl_toolkits import mplot3d
 from sort_population import sort_population_cornerfirst
 from EI_problem import ego_believer
 from sklearn import cluster
@@ -407,8 +407,12 @@ def cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **kwargs
     n_objs = train_y.shape[1]
     low = target_problem.xl
     up = target_problem.xu
-    new_problem = single_krg_optim.cornersearch_krgopt(krg, n_vals, n_sur_cons, n_objs*2, low, up)
-    # new_problem = single_krg_optim.cornersearch_krgoptminus(krg, n_vals, n_sur_cons, n_objs, low, up)
+
+    if 'corner_searchscheme' in kwargs.keys():
+        if kwargs['corner_searchscheme'] == 3:
+            new_problem = single_krg_optim.cornersearch_krgopt(krg, n_vals, n_sur_cons, n_objs*2, low, up)
+        if kwargs['corner_searchscheme'] == 4:
+            new_problem = single_krg_optim.cornersearch_krgoptminus(krg, n_vals, n_sur_cons, n_objs, low, up)
 
 
     single_bounds = np.vstack((low, up)).T.tolist()
@@ -431,8 +435,6 @@ def cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **kwargs
     selected = sort_population_cornerfirst(nd.shape[0], new_problem.n_obj, 0, [], [], [], nd, ndx)
     nd = nd[selected, :]
     ndx = ndx[selected, :]
-
-
 
     '''
     if nd.shape[0] >= new_problem.n_obj:
@@ -595,7 +597,7 @@ def identify_cornerpoints(krg, n_var, n_constr, n_obj, low, up, guide_x):
 def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal):
     # (5)save nd front under name \problem_method_i\nd_seed_1.csv
     path = os.getcwd()
-    path = path + '\paper1_results3maf11d_5corner'
+    path = path + '\paper1_results3maf11d_3corner'
     if not os.path.exists(path):
         os.mkdir(path)
     savefolder = path + '\\' + target_problem.name() + '_' + method_selection + '_' + str(int(search_ideal))
@@ -613,7 +615,7 @@ def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal):
 
 def pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, nadir_record, cornerid, prediction_xrecord, prediction_yrecord, extreme_search, success_extremesearch):
     path = os.getcwd()
-    path = path + '\paper1_results3maf11d_5corner'
+    path = path + '\paper1_results3maf11d_3corner'
     if not os.path.exists(path):
         os.mkdir(path)
     savefolder = path + '\\' + target_problem.name() + '_' + method_selection + '_' + str(int(search_ideal))
@@ -959,6 +961,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
     n_iter = max_eval - number_of_initial_samples  # stopping criterion set
 
+
     pf_nd = []  # analysis parameter, due to search_ideal, size is un-determined
     # (1) init training data with number of initial_samples
     train_x, train_y, cons_y = init_xy(number_of_initial_samples, target_problem, seed_index)
@@ -1141,7 +1144,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                         pred_y = np.atleast_2d(pred_y).reshape(1, -1)
                         pred_y = denormalize(pred_y, train_y)
                         prediction_yrecord = np.append(prediction_yrecord, pred_y)
-                elif search_ideal == 3:
+                elif search_ideal == 3 or search_ideal == 4:
                     # Since now sample has been added, it makes sense to update the kriging model
                     norm_train_y = norm_scheme(train_y)
                     krg, krg_g = cross_val_krg(train_x, norm_train_y, cons_y, enable_crossvalidation)
@@ -1161,7 +1164,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
                     # find corners and decide whether to evaluate them
                     # use current ND front to force corner search move forward
-                    corner_param = {'denorm': denormalize, 'inserted_pop': insertpop}
+                    corner_param = {'denorm': denormalize, 'inserted_pop': insertpop, 'corner_searchscheme': search_ideal}
                     corner_x, corner_fnorm = cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **corner_param)
                     train_x, train_y, n_corner = selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm, krg, nd_front, hvimprovement, hv_ref, target_problem)
 
@@ -1250,7 +1253,7 @@ def single_run():
     # problems_json = 'p/zdt_problems_hvnd.json'
     # problems_json = 'p/zdt_problems_hvndr.json'
     # problems_json = 'p/dtlz_problems_hvndr3.json'
-    problems_json = 'p/maf_problems_hvndr3.json'
+    problems_json =  'p/all_problems_self_0.json'
 
     with open(problems_json, 'r') as data_file:
         hyp = json.load(data_file)
@@ -1281,9 +1284,14 @@ def para_run():
                      # 'p/wfg_problems_hv.json',
                      # 'p/wfg_problems_hvnd.json',
                      # 'p/wfg_problems_hvndr3.json',
-                     # 'p/maf_problems_hv.json',
-                     # 'p/maf_problems_hvnd.json',
-                     'p/maf_problems_hvndr5.json',
+                     # 'p/maf_problems_hv5.json',
+                     # 'p/maf_problems_hvnd5.json',
+                     # 'p/maf_problems_hvndr5.json',
+                    'p/all_problems_self_0.json',
+                    'p/all_problems_nd_0.json',
+                    'p/all_problems_corner_2.json',
+                    'p/all_problems_corner_3.json',
+                    'p/all_problems_corner_4.json',
                      ]
     args = []
     seedmax = 29
