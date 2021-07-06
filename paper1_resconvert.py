@@ -121,7 +121,7 @@ def hvconverge_averageplot(resultfolder, resultconver):
             '''
     import json
 
-    problems_json = 'p/resconvert.json'
+    problems_json = 'p/resconvert_plot3.json'
 
     # (1) load parameter settings
     with open(problems_json, 'r') as data_file:
@@ -132,7 +132,12 @@ def hvconverge_averageplot(resultfolder, resultconver):
     seedmax = 29
 
     num_pro = len(target_problems)
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_4']
+    # methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_4']
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2',
+               'normalization_with_nd_4',
+               'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+    methods_title = ['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$', 'Norm$R_{NDC1}$', 'Norm$R_{NDC2}$']
+
     num_methods = len(methods)
 
     path = os.getcwd()
@@ -185,7 +190,7 @@ def hvconverge_averageplot(resultfolder, resultconver):
             std_hv1 = np.std(rawhv, axis=0)
             x = range(initsize, evalnum)
 
-            ax.plot(x, mean_hv1)
+            ax.plot(x, mean_hv1, label=methods_title[j])
             ax.fill_between(x, mean_hv1 + std_hv1, mean_hv1-std_hv1, alpha=0.2)
             # plt.pause(2)
             a = 0
@@ -198,7 +203,7 @@ def hvconverge_averageplot(resultfolder, resultconver):
         ax.set_xlabel('evaluations', fontsize=ss)
         ax.set_ylabel('hypervolume', fontsize=ss)
         plt.title(problem.name(), fontsize=ss)
-        plt.legend(['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$'], fontsize=ss)
+        plt.legend( fontsize=ss)
 
         # save ---
         paths = os.getcwd()
@@ -779,7 +784,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
     '''
     import json
 
-    problems_json = 'p/resconvert.json'
+    problems_json = 'p/resconvertonly1.json'
 
     # (1) load parameter settings
     with open(problems_json, 'r') as data_file:
@@ -804,15 +809,19 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
 
     for problem_i, problem in enumerate(target_problems):
         problem = eval(problem)
-        pf = get_paretofront(problem, 100)
+        pf = get_paretofront(problem, 1000)
         nadir = np.max(pf, axis=0)
         ref = nadir * 1.1
+
+        evalnum = 400
+        '''
         if 'ZDT' in problem.name():
             evalnum = 100
         if 'DTLZ' in problem.name():
             evalnum = 300  # 200   # 100
         if 'WFG' in problem.name() or 'MAF' in problem.name():
             evalnum = 300  # 300   # 250
+        '''
         for j in range(num_methods):
             method_selection = methods[j]
             savefolder = path + '\\' + problem.name() + '_' + method_selection
@@ -864,7 +873,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
 
             if 'DTLZ' in problem.name() or 'MAF' in problem.name():
                 initsize = 11 * problem.n_var - 1
-            if 'WFG' in problem.name() :
+            if 'WFG' in problem.name():
                 initsize = 200
 
             plotmedian_hv(d_stat[3, i], median_trainy, problem_2visual, method_id, initsize, resultfolder)
@@ -874,8 +883,6 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
         sortlist = np.argsort(nadir_distance[:, i])
         nadir_stat[2, i] = nadir_distance[:, i][sortlist[int(seedmax / 2)]]
         nadir_stat[3, i] = sortlist[int(seedmax / 2)]
-
-
 
     plt.ioff()
     # path = path + '\paper1_resconvert'
@@ -932,6 +939,146 @@ def get_nadirdistance(trainy, problem, method_selection):
     nadir = (nadir - ideal)/(nadir - ideal)
     return np.linalg.norm(nadir - nadir_algo)
 
+def plot_for_paper(resultfolder, result_convertfolder):
+
+    import json
+    problems_json = 'p/resconvert_plot3.json'
+
+    # (1) load parameter settings
+    with open(problems_json, 'r') as data_file:
+        hyp = json.load(data_file)
+
+    target_problems = hyp['MO_target_problems']
+    # target_problems = target_problems[4:5]
+    seedmax = 29
+    median_visual = True
+
+    num_pro = len(target_problems)
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_4', 'normalization_with_nd_3'] #'normalization_with_nd_3']   'normalization_with_external_4'
+    # methods = [ 'normalization_with_nd_1']
+    num_methods = len(methods)
+    hv_raw = np.zeros((seedmax, num_pro * num_methods))
+    ideal_distance = np.zeros((seedmax, num_pro * num_methods))
+    nadir_distance = np.zeros((seedmax, num_pro * num_methods))
+
+    path = os.getcwd()
+    # path = path + '\paper1_results'
+    path = path + '\\' + resultfolder
+
+    for problem_i, problem in enumerate(target_problems):
+        problem = eval(problem)
+        pf = get_paretofront(problem, 1000)
+        nadir = np.max(pf, axis=0)
+        ref = nadir * 1.1
+        evalnum = 300
+
+        for j in range(num_methods):
+            method_selection = methods[j]
+            savefolder = path + '\\' + problem.name() + '_' + method_selection
+            for seed in range(seedmax):
+                savename = savefolder + '\\trainy_seed_' + str(seed) + '.csv'
+                print(savename)
+                trainy = np.loadtxt(savename, delimiter=',')
+                trainy = np.atleast_2d(trainy)
+
+                # fixed bug on number of evaluations
+                trainy = trainy[0:evalnum, :]
+                # hv = get_f2hv(trainy, ref)
+                hv = get_f2hvnorm(trainy, pf)
+                # print(hv)
+                hv_raw[seed, problem_i * num_methods + j] = hv
+                d = get_idealdistance(trainy, problem)
+                ideal_distance[seed, problem_i * num_methods + j] = d
+                d2 = get_nadirdistance(trainy, problem, method_selection)
+                nadir_distance[seed, problem_i * num_methods + j] = d2
+
+    # (2) mean median collection
+    hv_stat = np.zeros((4, num_pro * num_methods))
+    for i in range(num_pro * num_methods):
+        # for i in range(num_pro * 1):
+        hv_stat[0, i] = np.mean(hv_raw[:, i])
+        hv_stat[1, i] = np.std(hv_raw[:, i])
+        sortlist = np.argsort(hv_raw[:, i])
+        hv_stat[2, i] = hv_raw[:, i][sortlist[int(seedmax / 2)]]
+        hv_stat[3, i] = sortlist[int(seedmax / 2)]
+
+    # (3) ideal distance check
+    d_stat = np.zeros((4, num_pro * num_methods))
+    nadir_stat = np.zeros((4, num_pro * num_methods))
+    for i in range(num_pro * num_methods):
+        # for i in range(num_pro * 1):
+        d_stat[0, i] = np.mean(ideal_distance[:, i])
+        d_stat[1, i] = np.std(ideal_distance[:, i])
+        sortlist = np.argsort(ideal_distance[:, i])
+        d_stat[2, i] = ideal_distance[:, i][sortlist[int(seedmax / 2)]]
+        d_stat[3, i] = sortlist[int(seedmax / 2)]
+        if median_visual:
+            problem_id = int(i / num_methods)
+            method_id = int(np.mod(i, num_methods))
+            problem_2visual = target_problems[problem_id]
+            problem = eval(problem_2visual)
+            savefolder = path + '\\' + problem.name() + '_' + methods[method_id]
+            savename = savefolder + '\\trainy_seed_' + str(int(d_stat[3, i])) + '.csv'
+            median_trainy = np.loadtxt(savename, delimiter=',')
+
+            if 'DTLZ' in problem.name() or 'MAF' in problem.name():
+                initsize = 11 * problem.n_var - 1
+            if 'WFG' in problem.name():
+                initsize = 200
+
+            plotmdeidan_hv_forpaper(d_stat[3, i], median_trainy, problem_2visual, method_id, initsize, resultfolder)
+
+def plotmdeidan_hv_forpaper(median_id, trainy, problem_str, method_id, init_size, resultfolder):
+    # this method plot the median results  of final ND and PF
+    # methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_external_4']#'normalization_with_nd_3']
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2',
+               'normalization_with_nd_4',
+               'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+    ss = 16
+    # methods_title = ['archive',  'ND front', 'external corner'] # 'corner search']
+    methods_title = ['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$', 'Norm$R_{NDC1}$', 'Norm$R_{NDC2}$']
+    problem = eval(problem_str)
+    true_pf = get_paretofront(problem, 1000)
+    # ---------- visual check
+    # fig, (ax1, ax2) = plt.subplots(1, 2, projection='3d')
+    f1= plt.figure(figsize=(5.5, 5.5))
+    ax1 = f1.add_subplot(111, projection=Axes3D.name)
+
+    ax1.scatter3D(true_pf[:, 0], true_pf[:, 1], true_pf[:, 2], s=10, c='g', alpha=0.2,
+                  label='PF')  # facecolors='none', edgecolors='g',
+    nd_front = get_ndfront(trainy)
+
+    ax1.scatter3D(nd_front[:, 0], nd_front[:, 1], nd_front[:, 2], c='red', label='ND')
+    ax1.legend(fontsize=ss)
+    ax1.set_xlabel('F1')
+    ax1.set_ylabel('F2')
+    ax1.set_zlabel('F3')
+    t = problem.name() # + ' ' + methods_title[method_id]
+    ax1.set_title(t, fontsize=ss)
+    ax1.view_init(20, 340)
+    # for angle in range(0, 360):
+    #     ax1.view_init(30, angle)
+    #    plt.pause(.001)
+
+    path = os.getcwd()
+    savefolder = path + '\\' + resultfolder + '\\process_plot'
+    if not os.path.exists(savefolder):
+        os.mkdir(savefolder)
+
+    savename1 = savefolder + '\\' + problem.name() + methods[method_id] + '_medianFinalnd_seed_' + str(
+        int(median_id)) + '_nd.eps'
+    savename2 = savefolder + '\\' + problem.name() + methods[method_id] + '_medianFinalnd_seed_' + str(
+        int(median_id)) + '_nd.png'
+    plt.savefig(savename1, format='eps')
+    plt.savefig(savename2)
+
+    savename3 = savefolder + '\\' + problem.name() + methods[method_id] + '_median_seed_' + str(
+        int(median_id)) + '_nd.fig.pickle'
+    pickle.dump(f1, open(savename3, 'wb'))
+    plt.close()
+
+
+
 
 def plotmedian_hv(median_id, trainy, problem_str, method_id, init_size, resultfolder):
     # this method plot the median results  of final ND and PF
@@ -940,7 +1087,7 @@ def plotmedian_hv(median_id, trainy, problem_str, method_id, init_size, resultfo
      'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
 
     # methods_title = ['archive',  'ND front', 'external corner'] # 'corner search']
-    methods_title = ['archive',  'ND front', 'independent', 'M corners', '2M corners']
+    methods_title = ['Archive',  'ND', 'Extreme point', 'Corner 1', 'Corner 2']
     problem = eval(problem_str)
     true_pf = get_paretofront(problem, 1000)
     # ---------- visual check
@@ -1208,10 +1355,10 @@ if __name__ == "__main__":
     # resultfolder = 'paper1_results'
     # resultconver = 'paper1_convert'
 
-    resultfolder = 'paper1_results3maf11d_3corner'
+    resultfolder = 'paper1_results3maf11d_5corner'
     resultconver = 'paper1_convert'
 
-
+    # plot_for_paper(resultfolder, resultconver)
     # import pickle
 
     # path = os.getcwd()

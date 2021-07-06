@@ -259,8 +259,8 @@ def optimizer_forcornersearch(problem, nobj, ncon, bounds, mut, crossp, popsize,
 
         # Selecting the parents for the next generation
         # selected = sort_population(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f)
-        # selected = sort_population_cornerfirst(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
-        selected = sort_population_NDcorner(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
+        selected = sort_population_cornerfirst(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
+        # selected = sort_population_NDcorner(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
         # selected = sort_population_cornerlexicon(popsize, nobj, ncon, infeasible, feasible, all_cv, all_f, all_x)
 
         end = time.time()
