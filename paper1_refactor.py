@@ -532,7 +532,7 @@ def selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm,  krg, n
     # corner f in normalized space
     # hvimprovement in normalized space
 
-    maxhv = hvimprovement
+    maxhv = hvimprovement # no more needed
     maxhv_id = -1
     n_evaluated = 0
     n_corner = corner_x.shape[0]
@@ -542,10 +542,11 @@ def selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm,  krg, n
         x = corner_x[i, :]
 
         if np.all(cornerf < hv_ref): # locate in previous normalization bound
-            cornerhv_improvement = ego_believer(x, krg, ndfront_norm, hv_ref)
-            if cornerhv_improvement >= maxhv:
-                maxhv_id = i
-                maxhv = cornerhv_improvement
+            # cornerhv_improvement = ego_believer(x, krg, ndfront_norm, hv_ref)
+            # if cornerhv_improvement >= maxhv:
+            #     maxhv_id = i
+            #     maxhv = cornerhv_improvement
+            continue
 
         else:   # outside normalization bound
             # check whether it is dominated by current ND
@@ -610,7 +611,7 @@ def activation_saveprocess(before_archivesize, after_archivesize, activation_rec
     return activation_record
 
 
-def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, activation_record):
+def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, activation_record,sil_record):
     # (5)save nd front under name \problem_method_i\nd_seed_1.csv
     path = os.getcwd()
     n = target_problem.n_obj
@@ -632,6 +633,9 @@ def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, 
 
     savename = savefolder + '\\activationcheck_seed_' + str(seed_index) + '.joblib'
     dump(activation_record, savename)
+
+    savename = savefolder + '\\sil_record_seed_' + str(seed_index) + '.joblib'
+    dump(sil_record, savename)
 
 
 
@@ -1008,7 +1012,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     extreme_search = 0
     success_extremesearch = 0
     activation_count = 0
+    silcount = 0
     activation_record = dict()
+    sil_record = dict()
 
     # (3) train krg
     krg, krg_g = cross_val_krg(train_x, norm_train_y, cons_y, enable_crossvalidation)
@@ -1123,7 +1129,8 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                                                                             insertpop, 0.8, 0.8, num_pop, num_gen,
                                                                             visualplot, ax, **ego_evalpara)
 
-                    hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
+                    # hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
+                    hvimprovement = None
 
                     # find corners and decide whether to evaluate them
                     # use current ND front to force corner search move forward
@@ -1131,6 +1138,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                                     'corner_searchscheme': search_ideal, 'cluster_analysis': False}
                     corner_x, corner_fnorm = cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem,
                                                                           **corner_param)
+
 
                     train_x, train_y, n_corner = selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm,
                                                                             krg, nd_front, hvimprovement, hv_ref,
@@ -1153,7 +1161,8 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                                                                             insertpop, 0.8, 0.8, num_pop, num_gen,
                                                                             visualplot, ax, **ego_evalpara)
 
-                    hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
+                    # hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
+                    hvimprovement = None
 
                     # find corners and decide whether to evaluate them
                     # use current ND front to force corner search move forward
@@ -1161,6 +1170,10 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                                     'corner_searchscheme': search_ideal, 'cluster_analysis': True}
                     corner_x, corner_fnorm = cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem,
                                                                           **corner_param)
+
+                    sil_record[str(silcount)] = corner_x.shape[0]
+                    silcount = silcount + 1
+
 
                     train_x, train_y, n_corner = selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm,
                                                                             krg, nd_front, hvimprovement, hv_ref,
@@ -1183,13 +1196,17 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                                                                 insertpop, 0.8, 0.8, num_pop, num_gen,
                                                                 visualplot, ax, **ego_evalpara)
 
-                    hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
+                    # hvimprovement = ego_believer(next_x, krg, nd_front, hv_ref)
+                    hvimprovement = None
 
                     # find corners and decide whether to evaluate them
                     # use current ND front to force corner search move forward
                     corner_param = {'denorm': denormalize, 'inserted_pop': insertpop,
                                     'corner_searchscheme': search_ideal,  'cluster_analysis': True}
                     corner_x, corner_fnorm = cornerplus_selectiveEvaluate(train_x, train_y, krg, target_problem, **corner_param)
+
+                    sil_record[str(silcount)] = corner_x.shape[0]
+                    silcount = silcount + 1
 
                     train_x, train_y, n_corner = selective_cornerEvaluation(train_x, train_y, corner_x, corner_fnorm, krg, nd_front, hvimprovement, hv_ref, target_problem)
 
@@ -1230,7 +1247,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
     # (5) save nd front under name \problem_method_i\nd_seed_1.csv
     # (6) save hv converge  under name \problem_method_i\hvconvg_seed_1.csv
-    nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, activation_record)
+    nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, activation_record, sil_record)
     pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, nadir_record, corner_id, prediction_xrecord, prediction_yrecord, extreme_search, success_extremesearch)
     end = time.time()
     print(str((end-start)/(60 * 60)) + 'hours')
@@ -1282,50 +1299,32 @@ def process_visualcheck3D(ax, next_x, next_y, target_problem, krg, denormalize, 
 
 def single_run():
     import json
-    # problems_json = 'p/zdt_problems_hvnd.json'
-    # problems_json = 'p/zdt_problems_hvndr.json'
-    # problems_json = 'p/dtlz_problems_hvndr3.json'
-    problems_json = 'p/all_problems_corner_4.json'
+    problems_json = 'p/half1_problems_corner_6.json'
 
     with open(problems_json, 'r') as data_file:
         hyp = json.load(data_file)
     target_problems = hyp['MO_target_problems']
     method_selection = hyp['method_selection']
     search_ideal = hyp['search_ideal']
-    search_ideal = 4
 
-    max_eval = hyp['max_eval']
+    max_eval = 80  # hyp['max_eval']
     num_pop = hyp['num_pop']
     num_gen = hyp['num_gen']
 
     target_problem = target_problems[0]
-    method_selection = "normalization_with_nd"
     seed_index = 1
-    visual = True
+    visual = False
     paper1_mainscript(seed_index, target_problem, method_selection, search_ideal, max_eval, num_pop, num_gen, visual)
     return None
 
 def para_run():
     import json
-    problems_json = [# 'p/dtlz_problems_hv.json',
-                     # 'p/dtlz_problems_hvnd.json',
-                     # 'p/dtlz_problems_hvndr3.json',
-                     # 'p/zdt_problems_hv.json',
-                     # 'p/zdt_problems_hvnd.json',
-                     # 'p/zdt_problems_hvndr.json',
-                     # 'p/wfg_problems_hv.json',
-                     # 'p/wfg_problems_hvnd.json',
-                     # 'p/wfg_problems_hvndr3.json',
-                     # 'p/maf_problems_hv5.json',
-                     # 'p/maf_problems_hvnd5.json',
-                     # 'p/maf_problems_hvndr5.json',
-                    #  'p/all_problems_self_0.json',
-                    # 'p/all_problems_nd_0.json',
-                    # 'p/all_problems_corner_2.json',
-                    'p/all_problems_corner_3.json',
-                    'p/all_problems_corner_4.json',
-                    # 'p/dltz_problems_corner_3.json',
-                     ]
+    problems_json = [
+                    'p/half2_problems_corner_3.json',
+                    'p/half2_problems_corner_4.json',
+                    'p/half2_problems_corner_5.json',
+                    'p/half2_problems_corner_6.json']
+
     args = []
     seedmax = 29
     for problem_setting in problems_json:
@@ -1334,14 +1333,14 @@ def para_run():
         target_problems = hyp['MO_target_problems']
         method_selection = hyp['method_selection']
         search_ideal = hyp['search_ideal']
-        max_eval = hyp['max_eval']
+        max_eval = 80  # hyp['max_eval']
         num_pop = hyp['num_pop']
         num_gen = hyp['num_gen']
         for problem in target_problems:
             for seed in range(seedmax):
                 args.append((seed, problem, method_selection, search_ideal, max_eval, num_pop, num_gen, False))
 
-    num_workers = 58
+    num_workers = 48
     pool = mp.Pool(processes=num_workers)
     pool.starmap(paper1_mainscript, ([arg for arg in args]))
 

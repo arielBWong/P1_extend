@@ -1350,10 +1350,23 @@ def plot3dresults():
     plot_process3d(problem, trainy, method_selection, seed)
 
 
+def activation_count():
+    path = os.getcwd()
+    problem = eval("MAF.MAF3(n_var=6, n_obj=3)")
+    resultfolder = 'results_OBJ3'
+    path = path + '\\' + resultfolder
+    savefolder = path + '\\' + problem.name() + '_' + 'normalization_with_nd_3\\activationcheck_seed_0.joblib'
+
+    d = load(savefolder)
+    print(d)
+
+
 
 if __name__ == "__main__":
     # resultfolder = 'paper1_results'
     # resultconver = 'paper1_convert'
+
+    activation_count()
 
     resultfolder = 'paper1_results3maf11d_5corner'
     resultconver = 'paper1_convert'
