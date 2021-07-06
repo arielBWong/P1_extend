@@ -1,0 +1,19 @@
+{
+"MO_target_problems": [
+	"DTLZs.DTLZ7(n_var=6, n_obj=3)",
+	"WFG.WFG_1(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_2(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_3(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_4(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_5(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_6(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_7(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_8(n_var=6, n_obj=3, K=4)",
+	"WFG.WFG_9(n_var=6, n_obj=3, K=4)"
+],
+"search_ideal": 3,
+"method_selection": "normalization_with_nd",
+"max_eval": 300,
+"num_pop": 100,
+"num_gen": 100
+}

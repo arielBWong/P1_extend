@@ -1,0 +1,19 @@
+{
+"MO_target_problems": [
+	"MAF.MAF1(n_var=6, n_obj=3)",
+	"MAF.MAF2(n_var=6, n_obj=3)",
+	"MAF.MAF3(n_var=6, n_obj=3)",
+	"MAF.MAF4(n_var=6, n_obj=3)",
+	"MAF.MAF5(n_var=6, n_obj=3)",
+	"MAF.MAF6(n_var=6, n_obj=3)",
+	"DTLZs.DTLZ1(n_var=6, n_obj=3)",
+	"DTLZs.DTLZ2(n_var=6, n_obj=3)",
+	"DTLZs.DTLZ3(n_var=6, n_obj=3)",
+	"DTLZs.DTLZ4(n_var=6, n_obj=3)"
+],
+"search_ideal": 4,
+"method_selection": "normalization_with_nd",
+"max_eval": 300,
+"num_pop": 100,
+"num_gen": 100
+}
