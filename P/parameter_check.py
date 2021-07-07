@@ -6,9 +6,9 @@ from surrogate_problems import branin, GPc, Gomez3, Mystery, Reverse_Mystery, SH
 if __name__ == "__main__":
 
 
-    for i in np.arange(3, 7):
+    for i in np.arange(0, 1):
         for j in np.arange(1, 3):
-            problem_setting = 'half' + str(j) + '_problems_corner_' + str(i) + '.json'
+            problem_setting = 'half' + str(j) + '_problems_nd_' + str(i) + '.json'
             with open(problem_setting, 'r') as data_file:
                 hyp = json.load(data_file)
 

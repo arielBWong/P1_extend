@@ -933,9 +933,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     # (5) save nd front under name \problem_method_i\nd_seed_1.csv
     # (6) save hv converge  under name \problem_method_i\hvconvg_seed_1.csv
 
-
-
-
     start = time.time()
     enable_crossvalidation = False
     mp.freeze_support()
@@ -961,6 +958,8 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         plt.ion()
         # figure, ax = plt.subplots()
         ax = plt.axes(projection='3d')
+    else:
+        ax = None
 
     # (move hv maximization problem up here)
     ego_eval = EI.ego_fit(target_problem.n_var, target_problem.n_obj, target_problem.n_constr, target_problem.xu,
@@ -979,8 +978,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         number_of_initial_samples = 200
 
     n_iter = max_eval - number_of_initial_samples  # stopping criterion set
-
-
     pf_nd = []  # analysis parameter, due to search_ideal, size is un-determined
     # (1) init training data with number of initial_samples
     train_x, train_y, cons_y = init_xy(number_of_initial_samples, target_problem, seed_index)
@@ -1022,7 +1019,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
     # (4-0) before entering iteration, run cornerseach first
     if search_ideal:
-
         train_x, train_y, sil_record, silcount = ideal_variations(search_ideal, train_x, train_y, krg, target_problem, seed_index,
                      norm_scheme, denormalize,
                      cons_y, enable_crossvalidation,
@@ -1039,7 +1035,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     for iteration in range(n_iter):
         print('iteration %d' % iteration)
         n_corner = 0  # if corner search conducted this will be changed inside method
-
 
         # (4-1) de search for proposing next x point
         # use my own DE faster
@@ -1060,15 +1055,17 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         next_x = np.atleast_2d(next_x).reshape(-1, n_vals)
         next_y = target_problem.evaluate(next_x, return_values_of=['F'])
 
-        # to check prediction accuracy
+        # to check prediction accuracy---------
         prediction_xrecord = np.append(prediction_xrecord, next_x)
         pred_y = []
+
         for m in range(target_problem.n_obj):
             tmp, _ = krg[m].predict(next_x)
             pred_y = np.append(pred_y, tmp)
         pred_y = np.atleast_2d(pred_y).reshape(1, -1)
         pred_y = denormalize(pred_y, train_y)
         prediction_yrecord = np.append(prediction_yrecord, pred_y)
+        #---------------------------------------------------------
 
         # add new proposed data
         train_x = np.vstack((train_x, next_x))
@@ -1086,7 +1083,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
             break
 
         # (4-2) according to configuration determine whether to estimate new point
-        if search_ideal :
+        if search_ideal:
             if confirm_search(next_y, train_y[0:-1, :]):
 
                 before_archivesize = train_x.shape[0]  # for record which solution is corner search solution
@@ -1104,8 +1101,6 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                 after_archivesize = train_x.shape[0]
                 activation_record = activation_saveprocess(before_archivesize, after_archivesize, activation_record, activation_count)
                 activation_count = activation_count + 1
-
-
 
                 # analysis parameter, always follow np.vstack
                 pf_hv, nd_hv = hv_converge(target_problem, train_y)
@@ -1150,9 +1145,12 @@ def ideal_variations(search_ideal, train_x, train_y, krg, target_problem, seed_i
                      ego_eval, bounds, num_pop, num_gen,
                      visualplot, ax,
                      sil_record, silcount):
+
+    # all variations of  ideal search
     if search_ideal == 1:
         print('ideal search')
         train_x, train_y = idealsearch_update(train_x, train_y, krg, target_problem)
+
     elif search_ideal == 2:
         print('Extreme point search')
         train_x, train_y = cornerplus_search(train_x, train_y, krg, target_problem)
@@ -1330,7 +1328,7 @@ def process_visualcheck3D(ax, next_x, next_y, target_problem, krg, denormalize, 
 
 def single_run():
     import json
-    problems_json = 'p/half1_problems_corner_6.json'
+    problems_json = 'p/half1_problems_corner_4.json'
 
     with open(problems_json, 'r') as data_file:
         hyp = json.load(data_file)
@@ -1338,7 +1336,7 @@ def single_run():
     method_selection = hyp['method_selection']
     search_ideal = hyp['search_ideal']
 
-    max_eval = 80  # hyp['max_eval']
+    max_eval = 170  # hyp['max_eval']
     num_pop = hyp['num_pop']
     num_gen = hyp['num_gen']
 
@@ -1351,11 +1349,12 @@ def single_run():
 def para_run():
     import json
     problems_json = [
-                    'p/half1_problems_corner_2.json',
-                    'p/half1_problems_corner_3.json',
-                    'p/half1_problems_corner_4.json',
-                    'p/half1_problems_corner_5.json',
-                    'p/half1_problems_corner_6.json',
+        'p/half1_problems_self_0.json',
+        'p/half1_problems_nd_0.json',
+        'p/half1_problems_corner_2.json',
+        'p/half1_problems_corner_5.json',
+        'p/half1_problems_corner_4.json',
+        'p/half1_problems_corner_6.json',
              ]
 
     args = []
@@ -1366,7 +1365,7 @@ def para_run():
         target_problems = hyp['MO_target_problems']
         method_selection = hyp['method_selection']
         search_ideal = hyp['search_ideal']
-        max_eval =  hyp['max_eval']
+        max_eval = hyp['max_eval']
         num_pop = hyp['num_pop']
         num_gen = hyp['num_gen']
         for problem in target_problems:
