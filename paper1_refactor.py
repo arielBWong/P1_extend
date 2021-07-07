@@ -1076,7 +1076,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
             break
 
         # (4-2) according to configuration determine whether to estimate new point
-        if search_ideal:
+        if search_ideal or iteration == 0:
             if confirm_search(next_y, train_y[0:-1, :]):
 
                 before_archivesize = train_x.shape[0]  # for record which solution is corner search solution
@@ -1320,10 +1320,8 @@ def single_run():
 def para_run():
     import json
     problems_json = [
-                    'p/half2_problems_corner_3.json',
-                    'p/half2_problems_corner_4.json',
-                    'p/half2_problems_corner_5.json',
-                    'p/half2_problems_corner_6.json']
+                    'p/half1_problems_corner_4.json',
+             ]
 
     args = []
     seedmax = 29
@@ -1333,7 +1331,7 @@ def para_run():
         target_problems = hyp['MO_target_problems']
         method_selection = hyp['method_selection']
         search_ideal = hyp['search_ideal']
-        max_eval = 80  # hyp['max_eval']
+        max_eval =  hyp['max_eval']
         num_pop = hyp['num_pop']
         num_gen = hyp['num_gen']
         for problem in target_problems:
