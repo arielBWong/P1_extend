@@ -796,7 +796,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
     median_visual = True
 
     num_pro = len(target_problems)
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_4', 'normalization_with_nd_3'] #'normalization_with_nd_3']   'normalization_with_external_4'
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_5', 'normalization_with_nd_4','normalization_with_nd_6'] #'normalization_with_nd_3']   'normalization_with_external_4'
     # methods = [ 'normalization_with_nd_1']
     num_methods = len(methods)
     hv_raw = np.zeros((seedmax, num_pro * num_methods))
@@ -813,7 +813,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
         nadir = np.max(pf, axis=0)
         ref = nadir * 1.1
 
-        evalnum = 400
+        evalnum = 300
         '''
         if 'ZDT' in problem.name():
             evalnum = 100
@@ -871,10 +871,8 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
             savename = savefolder + '\\trainy_seed_' + str(int(d_stat[3, i])) + '.csv'
             median_trainy = np.loadtxt(savename, delimiter=',')
 
-            if 'DTLZ' in problem.name() or 'MAF' in problem.name():
-                initsize = 11 * problem.n_var - 1
-            if 'WFG' in problem.name():
-                initsize = 200
+
+            initsize = 150
 
             plotmedian_hv(d_stat[3, i], median_trainy, problem_2visual, method_id, initsize, resultfolder)
 
@@ -1083,11 +1081,11 @@ def plotmdeidan_hv_forpaper(median_id, trainy, problem_str, method_id, init_size
 def plotmedian_hv(median_id, trainy, problem_str, method_id, init_size, resultfolder):
     # this method plot the median results  of final ND and PF
     # methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_external_4']#'normalization_with_nd_3']
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_4',
-     'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_5',
+     'normalization_with_nd_4', 'normalization_with_nd_4',  ]  # 'normalization_with_nd_3']   'normalization_with_external_4'
 
     # methods_title = ['archive',  'ND front', 'external corner'] # 'corner search']
-    methods_title = ['Archive',  'ND', 'Extreme point', 'Corner 1', 'Corner 2']
+    methods_title = ['Archive',  'ND', 'Extreme point', 'Corner 1 all evaluate', 'Corner 1 selective', 'Corner 1 Sel+Sil']
     problem = eval(problem_str)
     true_pf = get_paretofront(problem, 1000)
     # ---------- visual check
@@ -1366,9 +1364,9 @@ if __name__ == "__main__":
     # resultfolder = 'paper1_results'
     # resultconver = 'paper1_convert'
 
-    activation_count()
+    # activation_count()
 
-    resultfolder = 'paper1_results3maf11d_5corner'
+    resultfolder = 'results_OBJ3'
     resultconver = 'paper1_convert'
 
     # plot_for_paper(resultfolder, resultconver)

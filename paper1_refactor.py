@@ -1349,12 +1349,19 @@ def single_run():
 def para_run():
     import json
     problems_json = [
-        'p/half1_problems_self_0.json',
-        'p/half1_problems_nd_0.json',
-        'p/half1_problems_corner_2.json',
-        'p/half1_problems_corner_5.json',
-        'p/half1_problems_corner_4.json',
-        'p/half1_problems_corner_6.json',
+        # 'p/half1_problems_OBJ_2_self_0.json',
+        # 'p/half1_problems_OBJ_2_nd_0.json',
+        # 'p/half1_problems_OBJ_2_nd_1.json',
+        # 'p/half1_problems_OBJ_2_nd_5.json',
+        # 'p/half1_problems_OBJ_2_nd_4.json',
+        # 'p/half1_problems_OBJ_2_nd_6.json',
+
+        'p/half1_problems_OBJ_5_nd_2.json',
+        'p/half1_problems_OBJ_5_nd_4.json',
+        'p/half1_problems_OBJ_5_nd_5.json',
+        'p/half1_problems_OBJ_5_nd_6.json',
+        'p/half1_problems_OBJ_5_nd_0.json',
+        'p/half1_problems_OBJ_5_self_0.json'
              ]
 
     args = []
@@ -1400,7 +1407,6 @@ def plot_run():
 if __name__ == "__main__":
 
     # plot_run()
-
     # single_run()
     para_run()
     # import sklearn
