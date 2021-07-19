@@ -35,6 +35,10 @@ run as above
 
 
 
+(4) demo figures
+degenerate front: plot_run in paper1_refactor.py
+
+corner demo: demo_plot2 in paper1_resconvert.py
 
 
 
