@@ -26,6 +26,7 @@ import EI_problem
 from scipy.optimize import differential_evolution
 from scipy.optimize import Bounds
 
+
 def hv_convergeplot(k):
     '''this function needs specify a problem internally
     and plot its hv convergence
@@ -134,9 +135,9 @@ def hvconverge_averageplot(resultfolder, resultconver):
     num_pro = len(target_problems)
     # methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_4']
     methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2',
-               'normalization_with_nd_4',
-               'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
-    methods_title = ['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$', 'Norm$R_{NDC1}$', 'Norm$R_{NDC2}$']
+               'normalization_with_nd_6']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+
+    methods_title = ['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$', 'Norm$R_{NDC}$(S3)']
 
     num_methods = len(methods)
 
@@ -151,12 +152,9 @@ def hvconverge_averageplot(resultfolder, resultconver):
         pf = get_paretofront(problem, 100)
         nadir = np.max(pf, axis=0)
         ref = nadir * 1.1
-        if 'ZDT' in problem.name() or 'DTLZ' in problem.name() or 'MAF' in problem.name():
-            evalnum = 300 # 100
-            initsize = problem.n_var * 11 - 1
-        if 'WFG' in problem.name() :
-            evalnum = 300 # 250
-            initsize = 200
+
+        evalnum = 300 # 250
+        initsize = 150
 
         # each problem calculate mean and variance
         fig, ax = plt.subplots()
@@ -200,10 +198,11 @@ def hvconverge_averageplot(resultfolder, resultconver):
         # top = top + 0.02
         # bottom =  bottom - 0.4
         # ax.set_ylim(bottom, top)
-        ax.set_xlabel('evaluations', fontsize=ss)
-        ax.set_ylabel('hypervolume', fontsize=ss)
+
+        ax.set_xlabel('Evaluations', fontsize=ss)
+        ax.set_ylabel('Hypervolume', fontsize=ss)
         plt.title(problem.name(), fontsize=ss)
-        plt.legend( fontsize=ss)
+        plt.legend(fontsize=ss)
 
         # save ---
         paths = os.getcwd()
@@ -784,7 +783,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
     '''
     import json
 
-    problems_json = 'p/resconvertonly1.json'
+    problems_json = 'p/rescover5.json'
 
     # (1) load parameter settings
     with open(problems_json, 'r') as data_file:
@@ -813,7 +812,7 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
         nadir = np.max(pf, axis=0)
         ref = nadir * 1.1
 
-        evalnum = 300
+        evalnum = 400
         '''
         if 'ZDT' in problem.name():
             evalnum = 100
@@ -872,9 +871,9 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
             median_trainy = np.loadtxt(savename, delimiter=',')
 
 
-            initsize = 150
+            initsize = 200
 
-            plotmedian_hv(d_stat[3, i], median_trainy, problem_2visual, method_id, initsize, resultfolder)
+            # plotmedian_hv(d_stat[3, i], median_trainy, problem_2visual, method_id, initsize, resultfolder)
 
         nadir_stat[0, i] = np.mean(nadir_distance[:, i])
         nadir_stat[1, i] = np.std(nadir_distance[:, i])
@@ -916,8 +915,8 @@ def trainy_summary2csv(resultfolder, result_convertfolder):
 
     print(0)
 
-def get_nadirdistance(trainy, problem, method_selection):
 
+def get_nadirdistance(trainy, problem, method_selection):
     PF = get_paretofront(problem, 1000)
     # pname = problem.name()
     # PF = np.loadtxt('PF_' + pname + '.csv', delimiter=',')
@@ -937,6 +936,7 @@ def get_nadirdistance(trainy, problem, method_selection):
     nadir = (nadir - ideal)/(nadir - ideal)
     return np.linalg.norm(nadir - nadir_algo)
 
+
 def plot_for_paper(resultfolder, result_convertfolder):
 
     import json
@@ -952,7 +952,7 @@ def plot_for_paper(resultfolder, result_convertfolder):
     median_visual = True
 
     num_pro = len(target_problems)
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_4', 'normalization_with_nd_3'] #'normalization_with_nd_3']   'normalization_with_external_4'
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_6'] #'normalization_with_nd_3']   'normalization_with_external_4'
     # methods = [ 'normalization_with_nd_1']
     num_methods = len(methods)
     hv_raw = np.zeros((seedmax, num_pro * num_methods))
@@ -965,7 +965,58 @@ def plot_for_paper(resultfolder, result_convertfolder):
 
     for problem_i, problem in enumerate(target_problems):
         problem = eval(problem)
+
+
         pf = get_paretofront(problem, 1000)
+
+        ss = 16
+
+        ''' 
+        #--------init script-----------
+        # if run this part remember to run in debug mode
+        # put break at the end of this script
+        
+        f1 = plt.figure(figsize=(5.5, 5.5))
+        ax1 = f1.add_subplot(111, projection=Axes3D.name)
+        ax1.scatter3D(pf[:, 0], pf[:, 1], pf[:, 2], s=10, c='g', alpha=0.2,
+                      label='PF')  # facecolors='none', edgecolors='g',
+
+        number_of_initial_samples = 150
+        train_x, train_y, cons_y = init_xy(number_of_initial_samples, problem, 8)
+        ax1.scatter3D(train_y[:, 0], train_y[:, 1], train_y[:, 2], c='k', s=5,  label='archive')
+
+        nd_front = get_ndfront(train_y)
+        ax1.scatter3D(nd_front[:, 0], nd_front[:, 1], nd_front[:, 2], c='red', label='ND')
+        ax1.legend()
+        ax1.set_title(problem.name(), fontsize = ss)
+        ax1.legend(fontsize=ss)
+        ax1.set_xlabel('f1', fontsize=ss)
+        ax1.set_ylabel('f2', fontsize=ss)
+        ax1.set_zlabel('f3', fontsize=ss)
+
+
+        ax1.view_init(20, 340)
+        # for angle in range(0, 360):
+        #     ax1.view_init(30, angle)
+        #    plt.pause(.001)
+
+        path = os.getcwd()
+        savefolder = path + '\\' + resultfolder + '\\process_plot'
+        if not os.path.exists(savefolder):
+            os.mkdir(savefolder)
+
+        savename1 = savefolder + '\\' + problem.name() + '_init.eps'
+        savename2 = savefolder + '\\' + problem.name() + '_init.png'
+        plt.savefig(savename1, format='eps')
+        plt.savefig(savename2)
+
+        plt.close()
+        #--------init script-----------
+        
+        '''
+
+
+
         nadir = np.max(pf, axis=0)
         ref = nadir * 1.1
         evalnum = 300
@@ -1019,22 +1070,19 @@ def plot_for_paper(resultfolder, result_convertfolder):
             savename = savefolder + '\\trainy_seed_' + str(int(d_stat[3, i])) + '.csv'
             median_trainy = np.loadtxt(savename, delimiter=',')
 
-            if 'DTLZ' in problem.name() or 'MAF' in problem.name():
-                initsize = 11 * problem.n_var - 1
-            if 'WFG' in problem.name():
-                initsize = 200
+
+            initsize = 150
 
             plotmdeidan_hv_forpaper(d_stat[3, i], median_trainy, problem_2visual, method_id, initsize, resultfolder)
 
 def plotmdeidan_hv_forpaper(median_id, trainy, problem_str, method_id, init_size, resultfolder):
     # this method plot the median results  of final ND and PF
     # methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_external_4']#'normalization_with_nd_3']
-    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2',
-               'normalization_with_nd_4',
-               'normalization_with_nd_3']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+    methods = ['normalization_with_self_0', 'normalization_with_nd_0', 'normalization_with_nd_2', 'normalization_with_nd_6' ]
+
     ss = 16
     # methods_title = ['archive',  'ND front', 'external corner'] # 'corner search']
-    methods_title = ['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$', 'Norm$R_{NDC1}$', 'Norm$R_{NDC2}$']
+    methods_title = ['Norm$R_A$', 'Norm$R_{ND}$', 'Norm$R_{NDE}$', 'Norm$R_{NDC}$']
     problem = eval(problem_str)
     true_pf = get_paretofront(problem, 1000)
     # ---------- visual check
@@ -1048,10 +1096,10 @@ def plotmdeidan_hv_forpaper(median_id, trainy, problem_str, method_id, init_size
 
     ax1.scatter3D(nd_front[:, 0], nd_front[:, 1], nd_front[:, 2], c='red', label='ND')
     ax1.legend(fontsize=ss)
-    ax1.set_xlabel('F1')
-    ax1.set_ylabel('F2')
-    ax1.set_zlabel('F3')
-    t = problem.name() # + ' ' + methods_title[method_id]
+    ax1.set_xlabel('f1', fontsize=ss)
+    ax1.set_ylabel('f2', fontsize=ss)
+    ax1.set_zlabel('f3', fontsize=ss)
+    t = problem.name()  # + ' ' + methods_title[method_id]
     ax1.set_title(t, fontsize=ss)
     ax1.view_init(20, 340)
     # for angle in range(0, 360):
@@ -1349,14 +1397,289 @@ def plot3dresults():
 
 
 def activation_count():
-    path = os.getcwd()
-    problem = eval("MAF.MAF3(n_var=6, n_obj=3)")
-    resultfolder = 'results_OBJ3'
-    path = path + '\\' + resultfolder
-    savefolder = path + '\\' + problem.name() + '_' + 'normalization_with_nd_3\\activationcheck_seed_0.joblib'
-
+    # path = os.getcwd()
+    # problem = eval("")
+    # resultfolder = 'results_OBJ3'
+    # path = path + '\\' + resultfolder
+    # savefolder = path + '\\' + problem.name() + '_' + 'normalization_with_nd_4\\activationcheck_seed_0.joblib'
+    savefolder = 'activationcheck_first_seed_0.joblib'
     d = load(savefolder)
     print(d)
+
+def activation_count_summary(resultfolder, resultconver):
+    import json
+
+    problems_json = 'p/rescover5.json'
+
+    # (1) load parameter settings
+    with open(problems_json, 'r') as data_file:
+        hyp = json.load(data_file)
+
+    target_problems = hyp['MO_target_problems']
+    # target_problems = target_problems[4:5]
+    seedmax = 29
+    median_visual = True
+    num_obj = eval(target_problems[0]).n_obj
+    if num_obj == 2:
+        eval_num = 200
+    if num_obj == 3:
+        eval_num = 300
+    if num_obj == 5:
+        eval_num = 400
+
+
+    num_pro = len(target_problems)
+    methods = ['normalization_with_nd_2',
+               'normalization_with_nd_5',
+               'normalization_with_nd_4',
+               'normalization_with_nd_6']  # 'normalization_with_nd_3']   'normalization_with_external_4'
+    # methods = [ 'normalization_with_nd_1']
+    num_methods = len(methods)
+    evalnum_raw = np.zeros((seedmax, num_pro * num_methods))
+    ideal_distance = np.zeros((seedmax, num_pro * num_methods))
+    nadir_distance = np.zeros((seedmax, num_pro * num_methods))
+
+    path = os.getcwd()
+    # path = path + '\paper1_results'
+    path = path + '\\' + resultfolder
+    path2 = os.path.join(os.getcwd(), '%s_first' % resultfolder)
+
+    for problem_i, problem in enumerate(target_problems):
+        problem = eval(problem)
+        for j in range(num_methods):
+            method_selection = methods[j]
+            savefolder = path + '\\' + problem.name() + '_' + method_selection
+
+            for seed in range(seedmax):
+                savename = savefolder + '\\activationcheck_seed_' + str(seed) + '.joblib'
+                print(savename)
+                activation_record = load(savename)
+                nn = len(activation_record.keys())
+                act_count = 0
+                for kk in range(nn):
+                    sols= activation_record[str(kk)]
+                    act_count  += len(sols)
+
+
+                if method_selection is 'normalization_with_nd_2' or method_selection is 'normalization_with_nd_1':
+                    act_count = act_count + num_obj
+                if method_selection is 'normalization_with_nd_5':
+                    act_count = act_count + num_obj
+                if method_selection is 'normalization_with_nd_4' or method_selection is 'normalization_with_nd_6':
+                    savefolder2 = os.path.join(path2, '%s_%s'%(problem.name(), method_selection))
+                    savename2 = os.path.join(savefolder2, 'activationcheck_first_seed_%d.joblib'%seed)
+                    activation_record = load(savename2)
+                    nn = len(activation_record.keys())
+                    for kk in range(nn):
+                        sols = activation_record[str(kk)]
+                        act_count += len(sols)
+
+                evalnum_raw[seed, problem_i * num_methods + j] = act_count
+    # --
+    evalnum_raw = evalnum_raw/eval_num
+
+    hv_stat = np.zeros((3, num_pro * num_methods))
+    for i in range(num_pro * num_methods):
+        # for i in range(num_pro * 1):
+        hv_stat[0, i] = np.mean(evalnum_raw[:, i])
+        hv_stat[1, i] = np.std(evalnum_raw[:, i])
+        sortlist = np.argsort(evalnum_raw[:, i])
+        hv_stat[2, i] = evalnum_raw[:, i][sortlist[int(seedmax / 2)]]
+
+    path = os.getcwd()
+    path = path + '\\' + resultfolder + '\\'
+
+    mean_summary = np.zeros((num_pro, num_methods))
+
+    savefile = path + '\\resultcount_' + str(num_obj) +'.csv'
+    with open(savefile, 'w') as f:
+        f.write(',')
+        for j in range(num_methods):
+            f.write(methods[j])
+            f.write(',')
+        f.write('\n')
+        for i in range(num_pro):
+            f.write(eval(target_problems[i]).name())
+            f.write(',')
+            for j in range(num_methods):
+                mean_value = hv_stat[0, i * num_methods + j]
+
+                mean_summary[i, j] = mean_value
+                # f.write(str(median_value))
+                f.write('%0.4f' % mean_value)
+                f.write(',')
+            f.write('\n')
+
+
+
+    mean_summary1 = np.mean(mean_summary, axis=0)
+    mean_summary2 = np.max(mean_summary, axis=0)
+    mean_summary3 = np.min(mean_summary, axis=0)
+
+    path = os.getcwd()
+    path = path + '\\' + resultfolder + '\\'
+
+    savefile = path + '\\resultcount_' + str(num_obj) + '_press.csv'
+    with open(savefile, 'w') as f:
+        f.write(',')
+        for j in range(num_methods):
+            f.write(methods[j])
+            f.write(',')
+        f.write('\n')
+        for i in range(1):
+            f.write(str(num_obj))
+            f.write(',')
+            for j in range(num_methods):
+                mean_value = mean_summary1[j]
+                # f.write(str(median_value))
+                f.write('%0.4f' % mean_value)
+                f.write(',')
+            f.write('\n')
+
+            f.write('max,')
+            for j in range(num_methods):
+                max_value = mean_summary2[j]
+                # f.write(str(median_value))
+                f.write('%0.4f' % max_value)
+                f.write(',')
+
+            f.write('\n')
+            f.write('min,')
+
+
+            for j in range(num_methods):
+                min_value = mean_summary3[j]
+                # f.write(str(median_value))
+                f.write('%0.4f' % min_value)
+                f.write(',')
+
+
+def init_xy(number_of_initial_samples, target_problem, seed):
+    n_vals = target_problem.n_var
+    n_sur_cons = target_problem.n_constr
+
+    # initial samples with hyper cube sampling
+    train_x = pyDOE.lhs(n_vals, number_of_initial_samples, criterion='maximin')  #, iterations=1000)
+
+    xu = np.atleast_2d(target_problem.xu).reshape(1, -1)
+    xl = np.atleast_2d(target_problem.xl).reshape(1, -1)
+
+    train_x = xl + (xu - xl) * train_x
+
+    # test
+    # lfile = 'sample_x' + str(seed) + '.csv'
+    # train_x = np.loadtxt(lfile, delimiter=',')
+
+    out = {}
+    target_problem._evaluate(train_x, out)
+    train_y = out['F']
+
+    if 'G' in out.keys():
+        cons_y = out['G']
+        cons_y = np.atleast_2d(cons_y).reshape(-1, n_sur_cons)
+    else:
+        cons_y = None
+
+    # test
+    '''
+    lfile = 'sample_x' + str(seed) + '.csv'
+    train_x_1 = np.loadtxt(lfile, delimiter=',')
+    out = {}
+    target_problem._evaluate(train_x_1, out)
+    train_y_1 = out['F']
+
+    plt.scatter(train_y[:, 0], train_y[:, 1])
+    plt.scatter(train_y_1[:, 0], train_y_1[:, 1])
+    plt.legend(['python', 'matlab'])
+    plt.show()
+    '''
+
+    return train_x, train_y, cons_y
+
+
+def demo_plot2():
+    #
+    # problem_str = "DTLZs.DTLZ2(n_var=6, n_obj=3)"
+    problem_str = "MAF.MAF4(n_var=6, n_obj=2)"
+    problem = eval(problem_str)
+    true_pf = get_paretofront(problem, 1000)
+    f1 = plt.figure()
+    ax1 = f1.add_subplot(111)
+
+    ax1.scatter(true_pf[:, 0], true_pf[:, 1], s=10, c='g', alpha=0.5,
+                  label='pareto front')  # facecolors='none', edgecolors='g',
+
+    # f = [[2, 0],[0, 4]]
+    # f = [[0,1, 0],
+    #     [1, 0, 0],
+    #     [0, 0, 1]]
+    f = [
+        [2, 0],
+        [0, 4],
+       ]
+
+    f = np.atleast_2d(f)
+    ax1.scatter(f[:, 0], f[:, 1], c='red', s=80)
+    # ax1.view_init(20, 20)
+    ss = 16
+    ax1.set_xlabel('f1', fontsize=ss)
+    ax1.set_ylabel('f2', fontsize=ss)
+    # ax1.set_zlabel('f3', fontsize=ss)
+    plt.pause(1)
+
+    folder = os.path.join(os.getcwd(), 'paper_figures')
+    name = os.path.join(folder, '%s_PFplot.eps' % problem.name())
+    name2 = os.path.join(folder, '%s_PFplot.png' % problem.name())
+
+    plt.savefig(name, format='eps')
+    plt.savefig(name, format='eps')
+    plt.savefig(name2)
+
+
+def demo_plot():
+    #
+    problem_str = "DTLZs.DTLZ2(n_var=6, n_obj=3)"
+    problem_str = "MAF.MAF1(n_var=6, n_obj=3)"
+    problem = eval(problem_str)
+    true_pf = get_paretofront(problem, 1000)
+    f1 = plt.figure()
+    ax1 = f1.add_subplot(111, projection=Axes3D.name)
+
+    ax1.scatter3D(true_pf[:, 0], true_pf[:, 1], true_pf[:, 2], s=10, c='g', alpha=0.5,
+                  label='pareto front')  # facecolors='none', edgecolors='g',
+
+    # f = [[2, 0],[0, 4]]
+    #f = [[0,1, 0],
+    #     [1, 0, 0],
+    #     [0, 0, 1]]
+    f = [
+        [1, 1, 0],
+        [1, 0, 1],
+        [0, 1, 1]
+    ]
+
+    f = np.atleast_2d(f)
+    ax1.scatter3D(f[:, 0], f[:, 1], f[:, 2], c='red',s =80)
+    ax1.view_init(20, 20)
+    ss = 16
+    ax1.set_xlabel('f1', fontsize = ss)
+    ax1.set_ylabel('f2', fontsize = ss)
+    ax1.set_zlabel('f3', fontsize = ss)
+    plt.pause(1)
+
+    folder = os.path.join(os.getcwd(),'paper_figures')
+    name = os.path.join(folder, '%s_PFplot.eps'%problem.name())
+    name2 = os.path.join(folder, '%s_PFplot.png' % problem.name())
+
+
+    plt.savefig(name, format='eps')
+    plt.savefig(name, format='eps')
+    plt.savefig(name2)
+
+
+
+
+
 
 
 
@@ -1365,11 +1688,13 @@ if __name__ == "__main__":
     # resultconver = 'paper1_convert'
 
     # activation_count()
+    #demo_plot2()
 
     resultfolder = 'results_OBJ3'
     resultconver = 'paper1_convert'
+    # activation_count_summary(resultfolder, resultconver)
 
-    # plot_for_paper(resultfolder, resultconver)
+    plot_for_paper(resultfolder, resultconver)
     # import pickle
 
     # path = os.getcwd()
@@ -1383,13 +1708,14 @@ if __name__ == "__main__":
     # nadirplot(resultfolder, 'distance_plot')
     # parallel_extract_nadir_ideal()
     # create_ideal_dis_file(resultfolder, resultconver)
-    trainy_summary2csv(resultfolder, resultconver)
-    # prediction_accuracy()
+    # trainy_summary2csv(resultfolder, resultconver)
+    # prediction_a
+    # ccuracy()
 
     # hv_summary2csv()
     # hv_medianplot()
     # plot3dresults()
-    # hvconverge_averageplot(resultfolder, resultconver)
+    hvconverge_averageplot(resultfolder, resultconver)
 
     # nadirplot()
     # hv_medianplot3in1()

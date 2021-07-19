@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 paper1_results/
 paper1_results_2d/
 paper1_results_400/
@@ -25,5 +26,25 @@ __pycache__/
 *.zip
 *.pptx
 
+=======
+/paper1_results
+/paper1_results_2d
+/paper1_results_400
+/paper1_results3D
+/paper1_results3dd
+/paper1_results3maf
+/paper1_results3maf11d
+/paper1_results3maf11d_3corner
+/paper1_results5f
+/paper1_results6D
+/paper1_results3maf11d_5corner
+/venv
+/paper1_3test
+/saveresults
+/results_OBJ3
+/results_OBJ3_half1
+/results_OBJ5
+__pycache__/
+>>>>>>> ff466375e458f93cff2ca9b9d2be5f64073f1a8e
 
 
