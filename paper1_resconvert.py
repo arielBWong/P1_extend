@@ -971,6 +971,11 @@ def plot_for_paper(resultfolder, result_convertfolder):
 
         ss = 16
 
+        ''' 
+        #--------init script-----------
+        # if run this part remember to run in debug mode
+        # put break at the end of this script
+        
         f1 = plt.figure(figsize=(5.5, 5.5))
         ax1 = f1.add_subplot(111, projection=Axes3D.name)
         ax1.scatter3D(pf[:, 0], pf[:, 1], pf[:, 2], s=10, c='g', alpha=0.2,
@@ -1006,7 +1011,9 @@ def plot_for_paper(resultfolder, result_convertfolder):
         plt.savefig(savename2)
 
         plt.close()
-
+        #--------init script-----------
+        
+        '''
 
 
 
@@ -1687,7 +1694,7 @@ if __name__ == "__main__":
     resultconver = 'paper1_convert'
     # activation_count_summary(resultfolder, resultconver)
 
-    # plot_for_paper(resultfolder, resultconver)
+    plot_for_paper(resultfolder, resultconver)
     # import pickle
 
     # path = os.getcwd()
