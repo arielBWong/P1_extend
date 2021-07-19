@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import optimizer_EI, optimizer
-# from pymop import ZDT1, ZDT2, ZDT3, ZDT4, ZDT6, \
-#    DTLZ1, DTLZ2, DTLZ3, DTLZ4, \
+from pymop import ZDT1, ZDT2, ZDT3, ZDT4, ZDT6
+#     DTLZ1, DTLZ2, DTLZ3, DTLZ4, \
 #     BNH, Carside, Kursawe, OSY, Truss2D, WeldedBeam, TNK
 from EI_krg import acqusition_function, close_adjustment
 from sklearn.utils.validation import check_array
@@ -639,6 +639,20 @@ def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, 
 
 
 
+def active2csv(target_problem, seed_index, method_selection, search_ideal, activation_record):
+    path = os.getcwd()
+    n = target_problem.n_obj
+    path = path + '\\results_OBJ' + str(n)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    savefolder = path + '\\' + target_problem.name() + '_' + method_selection + '_' + str(int(search_ideal))
+    if not os.path.exists(savefolder):
+        os.mkdir(savefolder)
+    savename = savefolder + '\\activationcheck_first_seed_' + str(seed_index) + '.joblib'
+    dump(activation_record, savename)
+
+
 def pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, nadir_record, cornerid, prediction_xrecord, prediction_yrecord, extreme_search, success_extremesearch):
     path = os.getcwd()
     n = target_problem.n_obj
@@ -942,7 +956,13 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     print('Problem %s, seed %d' % (target_problem.name(), seed_index))
     PF = get_paretofront(target_problem, 1000)
 
-
+    tmp_path = os.getcwd()
+    tmp_path = os.path.join(tmp_path, 'results_OBJ%d' % target_problem.n_obj)
+    tmp_folder = os.path.join(tmp_path, '%s_%s_%d' % (target_problem.name(), method_selection, int(search_ideal)))
+    tmp_savename = os.path.join(tmp_folder, 'activationcheck_first_seed_%d.joblib' % seed_index)
+    if os.path.exists(tmp_savename):
+        print(tmp_savename + ' exists and pass run')
+        return
 
     if target_problem.n_obj == 2:
         hv_ref = [1.1, 1.1]
@@ -1019,6 +1039,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
     # (4-0) before entering iteration, run cornerseach first
     if search_ideal:
+        before_archivesize = train_x.shape[0]
         train_x, train_y, sil_record, silcount = ideal_variations(search_ideal, train_x, train_y, krg, target_problem, seed_index,
                      norm_scheme, denormalize,
                      cons_y, enable_crossvalidation,
@@ -1029,6 +1050,16 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         norm_train_y = norm_scheme(train_y)
         krg, krg_g = cross_val_krg(train_x, norm_train_y, cons_y, enable_crossvalidation)
 
+        after_archivesize = train_x.shape[0]
+        activation_record = activation_saveprocess(before_archivesize, after_archivesize, activation_record,
+                                                   activation_count)
+        activation_count = activation_count + 1
+        active2csv(target_problem, seed_index, method_selection, search_ideal, activation_record)
+        return
+
+
+
+    # save activation
 
 
     # (4) enter iteration, propose next x till number of iteration is met
@@ -1328,7 +1359,7 @@ def process_visualcheck3D(ax, next_x, next_y, target_problem, krg, denormalize, 
 
 def single_run():
     import json
-    problems_json = 'p/half1_problems_corner_4.json'
+    problems_json = 'p/half2_problems_corner_2.json'
 
     with open(problems_json, 'r') as data_file:
         hyp = json.load(data_file)
@@ -1355,14 +1386,14 @@ def para_run():
         # 'p/half1_problems_OBJ_2_nd_5.json',
         # 'p/half1_problems_OBJ_2_nd_4.json',
         # 'p/half1_problems_OBJ_2_nd_6.json',
+        'p/OBJ_2_nd_4.json',
+        'p/OBJ_2_nd_6.json',
+        'p/OBJ_3_nd_4.json',
+        'p/OBJ_3_nd_6.json',
+        'p/OBJ_5_nd_4.json',
+        'p/OBJ_5_nd_6.json',
 
-        'p/half1_problems_OBJ_5_nd_2.json',
-        'p/half1_problems_OBJ_5_nd_4.json',
-        'p/half1_problems_OBJ_5_nd_5.json',
-        'p/half1_problems_OBJ_5_nd_6.json',
-        'p/half1_problems_OBJ_5_nd_0.json',
-        'p/half1_problems_OBJ_5_self_0.json'
-             ]
+    ]
 
     args = []
     seedmax = 29
@@ -1387,20 +1418,77 @@ def para_run():
 
 def plot_run():
     import json
-    problems_json = 'p/resconvert.json'
+    problems_json = 'p/half1_problems_corner_4.json'
+
     with open(problems_json, 'r') as data_file:
         hyp = json.load(data_file)
-    target_problems = hyp['MO_target_problems']
+    target_problems = ["MAF.MAF6(n_var=6, n_obj=3)"]  # hyp['MO_target_problems']
+    method_selection = hyp['method_selection']
+    search_ideal = 6  # hyp['search_ideal']
 
-    method_selection = ['normalization_with_self', 'normalization_with_nd', 'normalization_with_nd']
-    search_ideal = 0
-    max_eval = 250
-    num_pop = 100
-    num_gen = 100
+    max_eval = 157  # hyp['max_eval']
+    num_pop = 200  # hyp['num_pop']
+    num_gen = 200  # hyp['num_gen']
+
+    target_problem = target_problems[0]
     seed_index = 1
-    i = 13
-    # for i in range(4, 9):
-    paper1_mainscript(seed_index, target_problems[i], method_selection[1], search_ideal, max_eval, num_pop, num_gen)
+
+    prob = eval(target_problem)
+    ax = plt.axes(projection='3d')
+    ax.cla()
+
+    true_pf = get_paretofront(prob, 1000)
+    ax.scatter3D(true_pf[:, 0], true_pf[:, 1], true_pf[:, 2], c='green', alpha=0.2, label='PF')
+
+    '''
+    # indx = true_pf[:, 0] > 0.8 and true_pf[:, 1] < 0.4 and true_pf[:, 2] <0,2
+    f = [[1, 0, 0],
+         [1, 0.01, 0.2],
+         [1, 0.1, 0.1],
+         [1.05, 0, 0.12],
+         [1.07, 0.02, 0.06]]
+    f = np.atleast_2d(f)
+    ax.scatter3D(f[:, 0], f[:, 1], f[:, 2], c='red', s= 70, alpha=0.9, label='PF')
+
+    f = [[0, 1.12, 0],
+         [0, 1.23, 0.02],
+         [0, 1.01, 0.08],
+         [0.07, 1, 0.09],
+         [0.2, 1, 0.35]]
+
+    f = np.atleast_2d(f)
+    ax.scatter3D(f[:, 0], f[:, 1], f[:, 2], c='orange', s=70, alpha=0.9, label='PF')
+
+    '''
+
+    f = [[0, 0, 1],
+         [0, 0.01, 1.02],
+         [0, 0.1, 1.1],
+         [0.05, 0, 1.12],
+         [0.07, 0.02, 1.06]]
+    f = np.atleast_2d(f)
+    ax.scatter3D(f[:, 0], f[:, 1], f[:, 2], c='red', s=70, alpha=0.9, label='PF')
+
+    f = [[0.77, 0.71, 0],
+         [0.79, 0.75, 0.0],
+         [0.76, 0.74, 0.1],
+         [0.77, 0.8, 0.12],
+         [0.8, 0.8, 0.09]]
+
+    f = np.atleast_2d(f)
+    ax.scatter3D(f[:, 0], f[:, 1], f[:, 2], c='orange', s=70, alpha=0.9, label='PF')
+
+    ax.set_xlabel('f1', fontsize=16)
+    ax.set_ylabel('f2', fontsize=16)
+    ax.set_zlabel('f3', fontsize=16)
+    ax.view_init(20, 20)
+    plt.pause(0.1)
+
+    savename1 = 'sildemo.eps'
+    savename2 = 'sildemo.png'
+    plt.savefig(savename1, format='eps')
+    plt.savefig(savename2)
+    plt.close()
 
 
 
