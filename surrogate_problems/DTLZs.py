@@ -2,11 +2,14 @@ import autograd.numpy as anp
 
 from pymop.problem import Problem
 import numpy as np
+from scipy.special import comb
+from itertools import combinations
+from pymop.factory import get_uniform_weights
 
 
 class DTLZ(Problem):
-    def __init__(self, n_var, n_obj, k=None):
 
+    def __init__(self, n_var, n_obj, k=None):
         if n_var:
             self.k = n_var - n_obj + 1
         elif k:
@@ -33,8 +36,8 @@ class DTLZ(Problem):
                 _f *= anp.sin(anp.power(X_[:, X_.shape[1] - i], alpha) * anp.pi / 2.0)
 
             f.append(_f)
-
         f = anp.column_stack(f)
+
         return f
 
 
@@ -64,6 +67,63 @@ class DTLZ1(DTLZ):
         out["F"] = anp.column_stack(f)
 
 
+class minusDTLZ1(DTLZ):
+    def __init__(self, n_var=7, n_obj=3, **kwargs):
+        super().__init__(n_var, n_obj, **kwargs)
+
+    def _calc_pareto_front(self, n_pareto_points = 100):
+        # g = 11.0125 # g1's magnitude is reduced
+        if self.n_var is not 6:
+            raise('number of variable is not 6, g needs recalculation, this version does not cover')
+
+        if self.n_obj == 3:
+            g = 9
+        elif self.n_obj == 2:
+            g = 11.25
+        elif self.n_obj == 5:
+            g = 4.5
+        else:
+            raise('pareto front is not implemented')
+
+        # g = 9
+        # P = UniformPoint(N, obj.M) / 2 * (1 + g) * (-1);
+        ref_dir = get_uniform_weights(n_pareto_points, self.n_obj)
+        pf = ref_dir/2 * (1 + g) * (-1)
+        return pf
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        original_problem = DTLZ1(n_var=self.n_var, n_obj=self.n_obj)
+        obj_F = original_problem.evaluate(x, return_values_of=['F'])
+        out["F"] = -1 * obj_F
+
+
+
+class invertedDTLZ1(DTLZ):
+    def __init__(self, n_var=7, n_obj=3, **kwargs):
+        super().__init__(n_var, n_obj, **kwargs)
+
+    def _calc_pareto_front(self, n_pareto_points = 100):
+
+        ref_dir = get_uniform_weights(n_pareto_points, self.n_obj)
+        pf = (1 - ref_dir)/2
+        return pf
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        original_problem = DTLZ1(n_var=self.n_var, n_obj=self.n_obj)
+        obj_F = original_problem.evaluate(x, return_values_of=['F'])
+
+        X_, X_M = x[:, :self.n_obj - 1], x[:, self.n_obj - 1:]
+        g = self.g1(X_M)
+
+        g = np.atleast_2d(g).reshape(-1, 1)
+        g = np.tile(g, (1, self.n_obj))
+
+        out["F"] =  0.5 * (1+g) - obj_F
+
+
+
+
+
 class DTLZ2(DTLZ):
     def __init__(self, n_var=10, n_obj=3, **kwargs):
         super().__init__(n_var, n_obj, **kwargs)
@@ -75,6 +135,57 @@ class DTLZ2(DTLZ):
         X_, X_M = x[:, :self.n_obj - 1], x[:, self.n_obj - 1:]
         g = self.g2(X_M)
         out["F"] = self.obj_func(X_, g, alpha=1)
+
+
+class minusDTLZ2(DTLZ):
+    def __init__(self, n_var=7, n_obj=3, **kwargs):
+        super().__init__(n_var, n_obj, **kwargs)
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        original_problem = DTLZ2(n_var=self.n_var, n_obj=self.n_obj)
+        obj_F = original_problem.evaluate(x, return_values_of=['F'])
+        out["F"] = -1 * obj_F
+
+    def _calc_pareto_front(self, n_pareto_points = 100):
+        # g = 0.5 ^ 2 * 10;
+        # P = UniformPoint(N, obj.M);
+        # P = P. / repmat(sqrt(sum(P. ^ 2, 2)), 1, obj.Global.M) * (1 + g) * (-1);
+
+        # g = 0.5 ** 2 * 10
+        g = 0.5 ** 2 * (self.n_var - self.n_obj + 1)
+
+        ref_dir = get_uniform_weights(n_pareto_points, self.n_obj)
+        d = np.sqrt(np.sum(ref_dir ** 2, 1))
+        d = np.atleast_2d(d).reshape(-1, 1)
+        d = np.tile(d, (1, self.n_obj))
+
+        pf = ref_dir/d  *  (1 + g) * (-1)
+        return pf
+
+
+
+class invertedDTLZ2(DTLZ):
+    def __init__(self, n_var=7, n_obj=3, **kwargs):
+        super().__init__(n_var, n_obj, **kwargs)
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        original_problem = DTLZ2(n_var=self.n_var, n_obj=self.n_obj)
+        obj_F = original_problem.evaluate(x, return_values_of=['F'])
+
+        X_, X_M = x[:, :self.n_obj - 1], x[:, self.n_obj - 1:]
+        g = self.g2(X_M)
+        out["F"] = (1+g) - obj_F
+
+    def _calc_pareto_front(self, n_pareto_points = 100):
+
+        ref_dir = get_uniform_weights(n_pareto_points, self.n_obj)
+        d = np.sqrt(np.sum(ref_dir ** 2, 1))
+        d = np.atleast_2d(d).reshape(-1, 1)
+        d = np.tile(d, (1, self.n_obj))
+
+        pf = 1 - ref_dir/d
+        return pf
+
 
 
 class DTLZ3(DTLZ):
@@ -90,6 +201,38 @@ class DTLZ3(DTLZ):
         out["F"] = self.obj_func(X_, g, alpha=1)
 
 
+class minusDTLZ3(DTLZ):
+    def __init__(self, n_var=10, n_obj=3, **kwargs):
+        super().__init__(n_var, n_obj, **kwargs)
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        original_problem = DTLZ3(n_var=self.n_var, n_obj=self.n_obj)
+        obj_F = original_problem.evaluate(x, return_values_of=['F'])
+        out["F"] = -1 * obj_F
+
+    def _calc_pareto_front(self, n_pareto_points = 100):
+        # g = 2202.5;
+        # P = UniformPoint(N, obj.M);
+        # P = P. /  repmat(sqrt(sum(P. ^ 2, 2)), 1, obj.M) * (1 + g) * (-1);
+        if self.n_var is not 6:
+            raise('number of variable is not 6, g needs recalculation')
+        if self.n_obj == 3:
+            g = 9
+        elif self.n_obj == 2:
+            g = 11.25
+        elif self.n_obj == 5:
+            g = 4.5
+        else:
+            raise ('pareto front is not implemented')
+        ref_dir = get_uniform_weights(n_pareto_points, self.n_obj)
+        d = np.sqrt(np.sum(ref_dir ** 2, 1))
+        d = np.atleast_2d(d).reshape(-1, 1)
+        d = np.tile(d, (1, self.n_obj))
+        pf = ref_dir / d * (1 + g) * (-1)
+
+        return pf
+
+
 class DTLZ4(DTLZ):
     def __init__(self, n_var=10, n_obj=3, alpha=100, d=100, **kwargs):
         super().__init__(n_var, n_obj, **kwargs)
@@ -103,6 +246,31 @@ class DTLZ4(DTLZ):
         X_, X_M = x[:, :self.n_obj - 1], x[:, self.n_obj - 1:]
         g = self.g2(X_M)
         out["F"] = self.obj_func(X_, g, alpha=self.alpha)
+
+
+
+
+class minusDTLZ4(DTLZ):
+    def __init__(self, n_var=10, n_obj=3, **kwargs):
+        super().__init__(n_var, n_obj, **kwargs)
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        original_problem = DTLZ4(n_var=self.n_var, n_obj=self.n_obj)
+        obj_F = original_problem.evaluate(x, return_values_of=['F'])
+        out["F"] = -1 * obj_F
+
+    def _calc_pareto_front(self, n_pareto_points = 100):
+        # g = 0.5 ^ 2 * 10;
+        # P = UniformPoint(N, obj.M);
+        # P = P. / repmat(sqrt(sum(P. ^ 2, 2)), 1, obj.M) * (1 + g) * (-1);
+        g = 0.5 ** 2 * (self.n_var - self.n_obj + 1)
+        ref_dir = get_uniform_weights(n_pareto_points, self.n_obj)
+        d = np.sqrt(np.sum(ref_dir ** 2, 1))
+        d = np.atleast_2d(d).reshape(-1, 1)
+        d = np.tile(d, (1, self.n_obj))
+
+        pf = ref_dir / d * (1 + g) * (-1)
+        return pf
 
 
 class DTLZ5(DTLZ):
@@ -254,10 +422,35 @@ class ConvexProblem(Problem):
 
 
 if __name__ == "__main__":
-    pro = DTLZ7(n_var=6, n_obj=2)
-    print(pro.name())
-    y = pro.pareto_front(n_pareto_points=40)
-    print(y)
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    import pyDOE
 
+    # pro = minusDTLZ4(n_var=6, n_obj=3)
+    pro = DTLZ4(n_var=6, n_obj=3)
+
+    print(pro.name())
+
+    train_x = pyDOE.lhs(pro.n_var, 66, criterion='maximin')  # , iterations=1000)
+
+    xu = np.atleast_2d(pro.xu).reshape(1, -1)
+    xl = np.atleast_2d(pro.xl).reshape(1, -1)
+
+    trgx = xl + (xu - xl) * train_x
+    trgy = pro.evaluate(trgx, return_values_of=['F'])
+
+    ref_dir = get_uniform_weights(1000, pro.n_obj)
+    pf = pro.pareto_front(ref_dir)
+    # pf = pro.pareto_front(n_pareto_points = 1000)
+
+    plt.ion()
+    f1 = plt.figure(figsize=(5.5, 5.5))
+    ax1 = f1.add_subplot(111, projection=Axes3D.name)
+    ax1.scatter3D(trgy[:, 0], trgy[:, 1], trgy[:, 2], s=10, c='r', alpha=0.8,
+                      label='init')
+    ax1.scatter3D(pf[:, 0], pf[:, 1], pf[:, 2], s=10, c='g', alpha=0.2,
+                  label='PF')
+    ax1.view_init(20, 340)
+    plt.close()
     # bj = pro.evaluate(x)
     # print(obj)

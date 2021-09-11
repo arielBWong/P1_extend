@@ -8,11 +8,12 @@ import matplotlib.pyplot as plt
 from paper1_refactor import get_ndfront, get_ndfrontx
 from EI_krg import acqusition_function, close_adjustment
 import copy
+from mpl_toolkits.mplot3d import Axes3D
 
 
 from sklearn import cluster
 from sklearn.metrics import silhouette_samples, silhouette_score
-
+from pymop.factory import get_uniform_weights
 
 def cross_val(val_x, val_y, **kwargs):
     gpr = kwargs['gpr']
@@ -27,7 +28,7 @@ def cross_val(val_x, val_y, **kwargs):
     print('cross validation on x %.2f, real_y is %0.2f, predicted_y is %0.2f, mse is %0.2f' % (val_x, val_y, pred_y, mse))
     return mse
 
-def optimizer(problem, nobj, ncon, bounds, mut, crossp, popsize, its,  **kwargs):
+def optimizer(problem, nobj, ncon, bounds, mut, crossp, popsize, its, visualization=False, **kwargs):
     '''
 
     :param problem:
@@ -41,6 +42,14 @@ def optimizer(problem, nobj, ncon, bounds, mut, crossp, popsize, its,  **kwargs)
     :param val_data:
     :return:
     '''
+    if visualization:
+        plt.ion()
+        f = plt.figure(figsize=(5.5, 5.5))
+        if nobj == 3:
+            ax = f.add_subplot(111, projection=Axes3D.name)
+        else:
+            ax = f.add_subplot(111)
+
     dimensions = len(bounds)
     pop_g = []
     archive_g = []
@@ -133,9 +142,33 @@ def optimizer(problem, nobj, ncon, bounds, mut, crossp, popsize, its,  **kwargs)
         if ncon != 0:
             archive_g = np.append(archive_g, child_g)
 
+
+        # visualization
+        if visualization:
+            ax.cla()
+            # ref_dir =  get_uniform_weights(100, nobj)
+            # pf = problem.pareto_front(ref_dir)
+            pf = problem.pareto_front(1000)
+            if nobj == 3:
+                ax.scatter3D(pf[:, 0], pf[:, 1], pf[:, 2], s=10, c='g', alpha=0.2,
+                              label='PF')
+                ax.scatter3D(pop_f[:, 0], pop_f[:, 1], pop_f[:, 2], s=10, c='r', alpha=0.8,
+                             label='population')
+                plt.pause(0.1)
+            else:
+                ax.scatter(pf[:, 0], pf[:, 1],s=10, c='g', alpha=0.2,
+                              label='PF')
+                ax.scatter(pop_f[:, 0], pop_f[:, 1], s=10, c='r', alpha=0.8,
+                             label='population')
+                plt.pause(0.1)
+
+
     # Getting the variables in appropriate bounds    
     pop_x = min_b + pop * diff
     archive_x = min_b + archive_x * diff
+    if visualization:
+        plt.close()
+
     return pop_x, pop_f, pop_g, archive_x, archive_f, archive_g
 
 def optimizer_forcornersearch(problem, nobj, ncon, bounds, mut, crossp, popsize, its, **kwargs):
