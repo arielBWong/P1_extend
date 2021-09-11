@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import optimizer_EI, optimizer
-from pymop import ZDT1, ZDT2, ZDT3, ZDT4, ZDT6
+from pymop import ZDT1, ZDT2, ZDT3, ZDT4, ZDT6, DTLZ1
 #     DTLZ1, DTLZ2, DTLZ3, DTLZ4, \
 #     BNH, Carside, Kursawe, OSY, Truss2D, WeldedBeam, TNK
 from EI_krg import acqusition_function, close_adjustment
@@ -166,7 +166,6 @@ def denormalization_with_nd(y_norm, y):
                 continue
             else:
                 break
-
     y_denorm = y_norm * (max_nd_by_feature - min_nd_by_feature) + min_nd_by_feature
     return y_denorm
 
@@ -226,6 +225,7 @@ def lexsort_with_certain_row(f_matrix, target_row_index):
     selected_x_index = lexsort_index[0]
 
     return selected_x_index
+
 
 def additional_evaluation(x_krg, train_x, train_y, problem,
                           ):
@@ -628,6 +628,7 @@ def nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, 
     ndfront = train_y[ndindex, :]
     np.savetxt(savename, ndfront, delimiter=',')
 
+
     savename = savefolder + '\\trainy_seed_' + str(seed_index) + '.csv'
     np.savetxt(savename, train_y, delimiter=',')
 
@@ -663,8 +664,8 @@ def pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, 
     if not os.path.exists(savefolder):
         os.mkdir(savefolder)
     savename = savefolder + '\\hvconvg_seed_' + str(seed_index) + '.csv'
-    pf_nd = pf_nd.reshape(-1, 2)
-    np.savetxt(savename, pf_nd, delimiter=',')
+    # pf_nd = pf_nd.reshape(-1, 2)
+    # np.savetxt(savename, pf_nd, delimiter=',')
 
     savename = savefolder + '\\nadir_seed_' + str(seed_index) + '.csv'
     n = target_problem.n_obj
@@ -954,8 +955,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
 
     target_problem = eval(target_problem)
     print('Problem %s, seed %d' % (target_problem.name(), seed_index))
-    PF = get_paretofront(target_problem, 1000)
+    # PF = get_paretofront(target_problem, 1000)
 
+    '''
     tmp_path = os.getcwd()
     tmp_path = os.path.join(tmp_path, 'results_OBJ%d' % target_problem.n_obj)
     tmp_folder = os.path.join(tmp_path, '%s_%s_%d' % (target_problem.name(), method_selection, int(search_ideal)))
@@ -963,6 +965,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     if os.path.exists(tmp_savename):
         print(tmp_savename + ' exists and pass run')
         return
+    '''
 
     if target_problem.n_obj == 2:
         hv_ref = [1.1, 1.1]
@@ -1054,10 +1057,8 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         activation_record = activation_saveprocess(before_archivesize, after_archivesize, activation_record,
                                                    activation_count)
         activation_count = activation_count + 1
-        active2csv(target_problem, seed_index, method_selection, search_ideal, activation_record)
-        return
-
-
+        # active2csv(target_problem, seed_index, method_selection, search_ideal, activation_record)
+        # return
 
     # save activation
 
@@ -1103,9 +1104,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
         train_y = np.vstack((train_y, next_y))
 
         # analysis parameter, always follow np.vstack
-        pf_hv, nd_hv = hv_converge(target_problem, train_y)
-        pf_nd = np.append(pf_nd, pf_hv)
-        pf_nd = np.append(pf_nd, nd_hv)
+        # pf_hv, nd_hv = hv_converge(target_problem, train_y)
+        # pf_nd = np.append(pf_nd, pf_hv)
+        # pf_nd = np.append(pf_nd, nd_hv)
 
         # count evaluation and break
         if train_y.shape[0] >= max_eval:
@@ -1134,9 +1135,9 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
                 activation_count = activation_count + 1
 
                 # analysis parameter, always follow np.vstack
-                pf_hv, nd_hv = hv_converge(target_problem, train_y)
-                pf_nd = np.append(pf_nd, pf_hv)
-                pf_nd = np.append(pf_nd, nd_hv)
+                # pf_hv, nd_hv = hv_converge(target_problem, train_y)
+                # pf_nd = np.append(pf_nd, pf_hv)
+                # pf_nd = np.append(pf_nd, nd_hv)
                 if visual:
                     if target_problem.n_obj == 2:
                         plot_process(ax, target_problem, train_y, norm_train_y, denormalize, True, krg1, train_x)
@@ -1165,7 +1166,7 @@ def paper1_mainscript(seed_index, target_problem, method_selection, search_ideal
     nd2csv(train_y, target_problem, seed_index, method_selection, search_ideal, activation_record, sil_record)
     pfnd2csv(pf_nd, target_problem, seed_index, method_selection, search_ideal, nadir_record, corner_id, prediction_xrecord, prediction_yrecord, extreme_search, success_extremesearch)
     end = time.time()
-    print(str((end-start)/(60 * 60)) + 'hours')
+    print(str((end-start)/(60 * 60)) + ' hours')
 
 
 
@@ -1325,6 +1326,8 @@ def process_visualcheck(ax, next_x, next_y, krg, denormalize, train_y):
     ax.scatter(pred_y[:, 0], pred_y[:, 1], marker=7, c='black')
     plt.pause(2)
 
+
+
 def process_visualcheck3D(ax, next_x, next_y, target_problem, krg, denormalize, train_y, norm_train_y):
     '''
     process: ax, next_y, target_problem, train_y, norm_train_y, denormalize, krg1
@@ -1357,9 +1360,10 @@ def process_visualcheck3D(ax, next_x, next_y, target_problem, krg, denormalize, 
     plt.pause(1)
 
 
+
 def single_run():
     import json
-    problems_json = 'p/half2_problems_corner_2.json'
+    problems_json = 'p/new_problems_corner_2.json'
 
     with open(problems_json, 'r') as data_file:
         hyp = json.load(data_file)
@@ -1367,7 +1371,7 @@ def single_run():
     method_selection = hyp['method_selection']
     search_ideal = hyp['search_ideal']
 
-    max_eval = 170  # hyp['max_eval']
+    max_eval = hyp['max_eval']
     num_pop = hyp['num_pop']
     num_gen = hyp['num_gen']
 
@@ -1377,22 +1381,22 @@ def single_run():
     paper1_mainscript(seed_index, target_problem, method_selection, search_ideal, max_eval, num_pop, num_gen, visual)
     return None
 
+
 def para_run():
     import json
     problems_json = [
         # 'p/half1_problems_OBJ_2_self_0.json',
         # 'p/half1_problems_OBJ_2_nd_0.json',
-        # 'p/half1_problems_OBJ_2_nd_1.json',
+        # 'p/half1_problems_OBJ_2_nd_1.json',  # only 2 objective is nd_1
         # 'p/half1_problems_OBJ_2_nd_5.json',
         # 'p/half1_problems_OBJ_2_nd_4.json',
         # 'p/half1_problems_OBJ_2_nd_6.json',
-        'p/OBJ_2_nd_4.json',
-        'p/OBJ_2_nd_6.json',
-        'p/OBJ_3_nd_4.json',
-        'p/OBJ_3_nd_6.json',
-        'p/OBJ_5_nd_4.json',
-        'p/OBJ_5_nd_6.json',
-
+        'p/inverted_problems_OBJ_3_nd_0.json',
+        'p/inverted_problems_OBJ_3_nd_2.json',
+        'p/inverted_problems_OBJ_3_nd_5.json',
+        'p/inverted_problems_OBJ_3_nd_4.json',
+        'p/inverted_problems_OBJ_3_nd_6.json',
+        'p/inverted_problems_OBJ_3_self_0.json',
     ]
 
     args = []
@@ -1415,6 +1419,7 @@ def para_run():
     pool.starmap(paper1_mainscript, ([arg for arg in args]))
 
     return None
+
 
 def plot_run():
     import json
@@ -1489,7 +1494,6 @@ def plot_run():
     plt.savefig(savename1, format='eps')
     plt.savefig(savename2)
     plt.close()
-
 
 
 if __name__ == "__main__":
