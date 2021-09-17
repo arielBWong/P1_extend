@@ -10,7 +10,7 @@ from surrogate_problems import DTLZs, iDTLZ
 from matplotlib.lines import Line2D
 from matplotlib import cm
 from joblib import dump, load
-
+from matplotlib.lines import Line2D
 import os
 import copy
 import multiprocessing as mp
@@ -23,10 +23,10 @@ from sklearn.metrics import silhouette_samples, silhouette_score
 import time
 
 if __name__ == "__main__":
-    prob = DTLZs.minusDTLZ4(n_var=6, n_obj=3)
+    prob = DTLZs.DTLZ2(n_var=6, n_obj=3)
     # x = np.atleast_2d([0, 0, 0, 0, 0, 0, 0])
     # f = prob.evaluate(x, return_values_of=['F'])
-
+    np.random.seed(4)
     bounds = np.vstack((prob.xl, prob.xu)).T.tolist()
     plot_param = {'visualize':True}
-    optimizer.optimizer(prob, prob.n_obj, 0, bounds, 0.2, 0.8, 500, 100, visualization=True,  **plot_param)
+    optimizer.optimizer(prob, prob.n_obj, 0, bounds, 0.2, 0.8,100, 100, visualization=True,  **plot_param)

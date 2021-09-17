@@ -11,7 +11,7 @@ import pyDOE
 from cross_val_hyperp import cross_val_krg
 from surrogate_problems import branin, GPc, Gomez3, Mystery, Reverse_Mystery, SHCBc, HS100, Haupt_schewefel, \
     MO_linearTest, single_krg_optim, WFG, iDTLZ, DTLZs, ego_fitness, EI, MAF
-from matplotlib.lines import Line2D
+
 from matplotlib import cm
 from joblib import dump, load
 
@@ -1391,12 +1391,12 @@ def para_run():
         # 'p/half1_problems_OBJ_2_nd_5.json',
         # 'p/half1_problems_OBJ_2_nd_4.json',
         # 'p/half1_problems_OBJ_2_nd_6.json',
-        'p/inverted_problems_OBJ_3_nd_0.json',
-        'p/inverted_problems_OBJ_3_nd_2.json',
-        'p/inverted_problems_OBJ_3_nd_5.json',
-        'p/inverted_problems_OBJ_3_nd_4.json',
-        'p/inverted_problems_OBJ_3_nd_6.json',
-        'p/inverted_problems_OBJ_3_self_0.json',
+        'p/new6_problems_OBJ_2_nd_0.json',
+        'p/new6_problems_OBJ_2_nd_1.json',
+        'p/new6_problems_OBJ_2_nd_5.json',
+        'p/new6_problems_OBJ_2_nd_4.json',
+        'p/new6_problems_OBJ_2_nd_6.json',
+        'p/new6_problems_OBJ_2_self_0.json',
     ]
 
     args = []

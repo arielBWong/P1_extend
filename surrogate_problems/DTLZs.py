@@ -174,6 +174,8 @@ class invertedDTLZ2(DTLZ):
 
         X_, X_M = x[:, :self.n_obj - 1], x[:, self.n_obj - 1:]
         g = self.g2(X_M)
+        g = np.atleast_2d(g).reshape(-1, 1)
+        g = np.tile(g, (1, self.n_obj))
         out["F"] = (1+g) - obj_F
 
     def _calc_pareto_front(self, n_pareto_points = 100):

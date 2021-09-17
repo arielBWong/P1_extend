@@ -9,8 +9,8 @@ from paper1_refactor import get_ndfront, get_ndfrontx
 from EI_krg import acqusition_function, close_adjustment
 import copy
 from mpl_toolkits.mplot3d import Axes3D
-
-
+from matplotlib.lines import Line2D
+import pygmo as pg
 from sklearn import cluster
 from sklearn.metrics import silhouette_samples, silhouette_score
 from pymop.factory import get_uniform_weights
@@ -146,20 +146,43 @@ def optimizer(problem, nobj, ncon, bounds, mut, crossp, popsize, its, visualizat
         # visualization
         if visualization:
             ax.cla()
-            # ref_dir =  get_uniform_weights(100, nobj)
-            # pf = problem.pareto_front(ref_dir)
-            pf = problem.pareto_front(1000)
+            ref_dir =  get_uniform_weights(100, nobj)
+            pf = problem.pareto_front(ref_dir)
+            # pf = problem.pareto_front(1000)
             if nobj == 3:
                 ax.scatter3D(pf[:, 0], pf[:, 1], pf[:, 2], s=10, c='g', alpha=0.2,
                               label='PF')
-                ax.scatter3D(pop_f[:, 0], pop_f[:, 1], pop_f[:, 2], s=10, c='r', alpha=0.8,
+                ax.scatter3D(pop_f[:, 0], pop_f[:, 1], pop_f[:, 2], s=10, c='r', alpha=0.2,
                              label='population')
                 plt.pause(0.1)
             else:
                 ax.scatter(pf[:, 0], pf[:, 1],s=10, c='g', alpha=0.2,
                               label='PF')
-                ax.scatter(pop_f[:, 0], pop_f[:, 1], s=10, c='r', alpha=0.8,
-                             label='population')
+                ax.scatter(pop_f[:, 0], pop_f[:, 1], s=10, c='r', alpha=0.5,
+                             label='archive')
+
+                ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(pop_f)
+                ndf = list(ndf)
+                ndf_index = ndf[0]
+                nd_frontf = pop_f[ndf_index, :]
+                ref = 1.1 * np.max(pop_f, axis=0)
+                '''
+                ref = 1.1 * np.max(nd_frontf, axis=0)
+                
+
+                ax.scatter(nd_frontf[:, 0], nd_frontf[:, 1], s=10, c='b', alpha=0.9,
+                           label='ND front')
+                '''
+                ax.scatter(ref[0], ref[1], s=40, marker='x', c='orange', alpha=0.9,
+                           label='Reference point')
+
+                ideal = [0, 0] # np.min(nd_frontdn, axis=0)
+                nadir = ref #np.max(nd_frontdn, axis=0)
+                line1 = [ideal[0], nadir[0], nadir[0], ideal[0], ideal[0]]
+                line2 = [ideal[1], ideal[1], nadir[1], nadir[1], ideal[1]]
+                line = Line2D(line1, line2, linestyle='--', c='orange')
+                ax.add_line(line)
+                ax.legend(fontsize=16)
                 plt.pause(0.1)
 
 
