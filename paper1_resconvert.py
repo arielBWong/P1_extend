@@ -25,6 +25,7 @@ import pygmo as pg
 import EI_problem
 from scipy.optimize import differential_evolution
 from scipy.optimize import Bounds
+from scipy.spatial.distance import cdist
 
 
 def hv_convergeplot(k):
@@ -1675,6 +1676,72 @@ def demo_plot():
     plt.savefig(name, format='eps')
     plt.savefig(name, format='eps')
     plt.savefig(name2)
+
+
+
+def check_cornerdistance(resultfolder, resultconver):
+    #
+    import json
+
+    problems_json = 'p/resconvert_plot3.json'
+
+    # (1) load parameter settings
+    with open(problems_json, 'r') as data_file:
+        hyp = json.load(data_file)
+
+    target_problems = hyp['MO_target_problems']
+    # target_problems = target_problems[4:5]
+    seedmax = 29
+
+    n = len(target_problems)
+
+
+
+    for i in range(n):
+        prob = eval(target_problems[i])
+        num_obj = prob.n_obj
+
+        if num_obj == 3:
+            resultfolder = 'results_OBJ3_beforeRevision'
+        if num_obj == 5:
+            resultfolder =  'results_OBJ5_beforeRevision'
+
+        path = os.getcwd()
+        path = path + '\\' + resultfolder
+        method_selection = 'normalization_with_nd_6'
+
+        savefolder = path + '\\' + prob.name() + '_' + method_selection
+
+
+        if num_obj == 3:
+            corners = np.atleast_2d([[0., 0., 1.], [0., 1., 0.], [1., 0., 0.]])
+            m = 150
+        if num_obj == 5:
+            corners = np.atleast_2d(
+                [[1., 0., 0., 0., 0.],
+                 [0., 1., 0., 0., 0.],
+                 [0., 0., 1., 0., 0.],
+                 [0., 0., 0., 1., 0.],
+                 [0., 0., 0., 0., 1.]]
+            )
+            m = 200
+        d = np.zeros((seedmax))
+        for seed in range(seedmax):
+
+            savename = savefolder + '\\trainy_seed_' + str(seed) + '.csv'
+            # print(savename)
+            trainy = np.loadtxt(savename, delimiter=',')
+            # convert to initialization
+            trainy = np.atleast_2d(trainy[0:m, :])
+            nd_frontdn = get_ndfront(trainy)
+
+            for j in range(num_obj):
+                corner_dist = np.min(cdist(np.atleast_2d(corners[j, :]), nd_frontdn))
+                d[seed] = d[seed] + corner_dist
+
+        d = d/num_obj
+        dmean = np.mean(d)
+        print('problem %s objective %d average nd distance to corners is %0.4f' % (prob.name(), num_obj, dmean))
 
 
 
