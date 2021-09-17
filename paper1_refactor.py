@@ -775,12 +775,17 @@ def plot_process(ax, problem, train_y, norm_train_y, denormalize, idealsearch, m
         ax.set_ylim(bottom, top)
         # plt.legend(['PF', 'nd front', 'ref point', 'ideal search', 'estimates'])
         # plt.legend(['PF', 'archive A', 'nd front', 'ref point', 'extreme points', 'surrogate minima'], fontsize=ss-1, ncol=2, handleheight=2.4, labelspacing=0.005)
-        plt.legend(['PF', 'archive A', 'nd front', 'ref point', 'extreme points', 'surrogate minima'], fontsize=ss,
+        plt.legend(['PF', 'archive A', 'nd front', 'ref point', 'corner points', 'surrogate minima'], fontsize=ss,
                    ncol=2, handleheight=2.4, labelspacing=0.005)
 
     ax.set_title(problem.name(), fontsize=ss)
-    ideal = np.min(nd_frontdn, axis=0)
-    nadir = np.max(nd_frontdn, axis=0)
+    if idealsearch:
+        ideal = np.min(nd_frontdn, axis=0)
+        nadir = np.max(nd_frontdn, axis=0)
+    else:
+        ideal = np.min(train_y, axis=0)
+        nadir = np.max(train_y, axis=0)
+
     line1 = [ideal[0], nadir[0], nadir[0], ideal[0], ideal[0]]
     line2 = [ideal[1], ideal[1], nadir[1], nadir[1], ideal[1]]
     line = Line2D(line1, line2, linestyle='--', c='orange')
@@ -808,15 +813,18 @@ def plot_process(ax, problem, train_y, norm_train_y, denormalize, idealsearch, m
     # ax.set_ylim(bottom, top)
     plt.pause(5)
 
-
     # -----
     path = os.getcwd()
-    savefolder = path + '\\paper1_results\\process_plot'
+    savefolder = path + '\\process_plot'
     if not os.path.exists(savefolder):
         os.mkdir(savefolder)
+    if idealsearch:
+        savename1 = savefolder + '\\' + problem.name() + '_process_nd_' + str(idealsearch) + '.eps'
+        savename2 = savefolder + '\\' + problem.name() + '_process_nd_' + str(idealsearch) + '.png'
+    else:
+        savename1 = savefolder + '\\' + problem.name() + '_process_self_' + str(idealsearch) + '.eps'
+        savename2 = savefolder + '\\' + problem.name() + '_process_self_' + str(idealsearch) + '.png'
 
-    savename1 = savefolder + '\\' + problem.name() + '_process_nd_' + str(idealsearch) + '.eps'
-    savename2 = savefolder + '\\' + problem.name() + '_process_nd_' + str(idealsearch) + '.png'
     plt.savefig(savename1, format='eps')
     plt.savefig(savename2)
     plt.close()
